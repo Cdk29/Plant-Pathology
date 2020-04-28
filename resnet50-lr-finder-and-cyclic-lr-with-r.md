@@ -1,5 +1,4 @@
-An R Markdown document converted from
-“resnet50-lr-finder-and-cyclic-lr-with-r.ipynb”
+Plant Pathology 2020 - FGVC7 with R and Keras
 ================
 
 # Keras with R
@@ -13,18 +12,20 @@ offers/projects, or for academic research. So in this kernel, I relearn
 it with the book *Deep Learning with R*. For the moment my aim is to
 have something that work from A to Z, and iterate over it.
 
-Also, I publish this kernel mostly because I realized that I **can’t use
-GPU on R kernel**, with Keras. [Issue
-here](https://www.kaggle.com/product-feedback/142790#804580).
+The data of this Rmarkdown came from the competition [Plant
+Pathology 2020 -
+FGVC7](https://www.kaggle.com/c/plant-pathology-2020-fgvc7). In this
+notebook I also reimplement a learning rate finder and the one cycle
+policy.
 
 ## To do list :
 
   - bigger images
-  - load best model after training \(\checkmark\)
-  - lr finder \(\checkmark\)
-  - add data augmentation \(\checkmark\)
-  - plot the data augmentation \(\checkmark\)
-  - implement one cycle policy ? \(\checkmark\)
+  - load best model after training :heavy\_check\_mark:
+  - lr finder :heavy\_check\_mark:
+  - add data augmentation - \[x\]
+  - plot the data augmentation - \[x\]
+  - implement one cycle policy ? - \[x\]
   - visualization of what the convnets learn
   - fine
     tuning
@@ -285,8 +286,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 90.1 73.1 130.7 81.5 57.9 ...
-    ##  $ : num [1:32, 1:4] 0 0 0 0 0 1 0 1 1 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 82.8 167.3 164.5 106.3 196.5 ...
+    ##  $ : num [1:32, 1:4] 1 0 0 0 0 0 1 1 0 1 ...
 
 # Import pre-trained model
 
@@ -702,42 +703,29 @@ But it gave quite poor results. Actually I have tried to look in other
 kernels, without finding clear consensus. Finally I will add some layer
 in a similar way on [how it is done in
 fast\_ai](https://docs.fast.ai/vision.learner.html#create_head). Since
-there is a “funny” pooling operation, I will had a max pooling, because
-we are most interresting to know if there is a rust or scab, that
-something on “average”. Or maybe I am wronng ?
+there is a “funny” pooling operation, The AdaptiveConcatPool2d (adaptive
+average pooling and adaptive max pooling), I will use a max pooling,
+because we are most interresting to know if there is a rust or scab,
+that something on “average”.
+
+One of the most important aspect of deep learning is to set up a good
+loss function and last layer activation. Since it is a **multiclass**
+and **multi-label** classification (plants can have several diseases), I
+will use a **sigmoid** activation for the last layer and a **binary
+crossentropy** as the loss function.
 
 ``` r
 model <- keras_model_sequential() %>% 
         conv_base %>% 
         layer_global_max_pooling_2d() %>% 
-        #layer_flatten() %>%
         layer_batch_normalization() %>%
         layer_dropout(rate=0.5) %>%
-        layer_dense(units=4, activation="softmax")
+        layer_dense(units=4, activation="sigmoid")
 ```
 
 ``` r
-model
+#model
 ```
-
-    ## Model
-    ## ________________________________________________________________________________
-    ## Layer (type)                        Output Shape                    Param #     
-    ## ================================================================================
-    ## resnet50 (Model)                    (None, 7, 7, 2048)              23587712    
-    ## ________________________________________________________________________________
-    ## global_max_pooling2d_1 (GlobalMaxPo (None, 2048)                    0           
-    ## ________________________________________________________________________________
-    ## batch_normalization_1 (BatchNormali (None, 2048)                    8192        
-    ## ________________________________________________________________________________
-    ## dropout_1 (Dropout)                 (None, 2048)                    0           
-    ## ________________________________________________________________________________
-    ## dense_1 (Dense)                     (None, 4)                       8196        
-    ## ================================================================================
-    ## Total params: 23,604,100
-    ## Trainable params: 12,292
-    ## Non-trainable params: 23,591,808
-    ## ________________________________________________________________________________
 
 ## Learning rate finder
 
@@ -806,7 +794,7 @@ plot(l_rate, type="b", pch=16, cex=0.1, xlab="iteration", ylab="learning rate")
 ``` r
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=lr_max),
-    loss="categorical_crossentropy",
+    loss="binary_crossentropy",
     metrics='accuracy'
 )
 ```
@@ -831,13 +819,13 @@ data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
 head(data)
 ```
 
-    ##   Learning_rate     Loss
-    ## 1  1.149757e-08 2.963216
-    ## 2  1.321941e-08 2.605625
-    ## 3  1.519911e-08 2.170684
-    ## 4  1.747528e-08 2.284032
-    ## 5  2.009233e-08 3.198197
-    ## 6  2.310130e-08 2.024627
+    ##   Learning_rate      Loss
+    ## 1  1.149757e-08 1.0512961
+    ## 2  1.321941e-08 1.0422401
+    ## 3  1.519911e-08 0.9401696
+    ## 4  1.747528e-08 1.0747244
+    ## 5  2.009233e-08 1.1087093
+    ## 6  2.310130e-08 1.0642153
 
 Learning rate vs loss
 :
@@ -931,19 +919,11 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
 }
 ```
 
-Parameters are similar to v6, just playing around to explore the
-possibility. In version 11 the floor parameters is not n but n/2. Based
-on the graph of v6, 10 epoch are enought to see if there is overfitting
-or not, and if the learning of the network does not fall to early.
-
 ``` r
 n=40
 nb_epochs=10
 n_iter<-n*nb_epochs
 ```
-
-Exp range since triangular lead to a quick overfitting
-:
 
 ``` r
 l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
@@ -964,13 +944,13 @@ model <- keras_model_sequential() %>%
         layer_global_max_pooling_2d() %>% 
         layer_batch_normalization() %>%
         layer_dropout(rate=0.5) %>%
-        layer_dense(units=4, activation="softmax")
+        layer_dense(units=4, activation="sigmoid")
 ```
 
 ``` r
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
-    loss="categorical_crossentropy",
+    loss="binary_crossentropy",
     metrics='accuracy'
 )
 ```
