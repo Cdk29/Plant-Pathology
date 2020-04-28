@@ -319,6 +319,9 @@ Based on this graph I would go on a base_lr=1e-5, and a max lr of 1e-3.
 
 # Training with cyclic lr
 
+After the improvement of the performance the neural net (by setting the right loss/activation of the last layer), it is time to focus a bit on the cyclic Learning Rate. Most of the code below came [from the cool data](http://thecooldata.com/2019/01/learning-rate-finder-with-cifar10-keras-r/). In contrast to the previous version (mode='exp_range', gamma=0.99), I will first try follow the guidelines from [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), by setting the learning rate into in a triangular mode (**NB**, without having the learning rate decreasing more than the minimum at the end of the cycle).
+
+
 ```{r}
 ####################
 Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=2000, mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle'){ # translated from python to R, original at: https://github.com/bckenstler/CLR/blob/master/clr_callback.py # This callback implements a cyclical learning rate policy (CLR). # The method cycles the learning rate between two boundaries with # some constant frequency, as detailed in this paper (https://arxiv.org/abs/1506.01186). # The amplitude of the cycle can be scaled on a per-iteration or per-cycle basis. # This class has three built-in policies, as put forth in the paper. # - "triangular": A basic triangular cycle w/ no amplitude scaling. # - "triangular2": A basic triangular cycle that scales initial amplitude by half each cycle. # - "exp_range": A cycle that scales initial amplitude by gamma**(cycle iterations) at each cycle iteration. # - "sinus": A sinusoidal form cycle # # Example # > clr <- Cyclic_LR(base_lr=0.001, max_lr=0.006, step_size=2000, mode='triangular', num_iterations=20000) # > plot(clr, cex=0.2)
@@ -388,7 +391,7 @@ n_iter<-n*nb_epochs
 
 ```{r}
 l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
-                        mode='exp_range', gamma=0.99, scale_fn=NULL, scale_mode='cycle')
+                        mode='triangular', gamma=0.99, scale_fn=NULL, scale_mode='cycle')
 ```
 
 ```{r}
