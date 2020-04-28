@@ -15,9 +15,9 @@ The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGV
 * bigger images
 * load best model after training :heavy_check_mark:
 * lr finder :heavy_check_mark:
-* add data augmentation - [x]
-* plot the data augmentation - [x]
-* implement one cycle policy ?  - [x]
+* add data augmentation :heavy_check_mark:
+* plot the data augmentation :heavy_check_mark:
+* implement one cycle policy ? :heavy_check_mark:
 * visualization of what the convnets learn
 * fine tuning
 
@@ -255,12 +255,15 @@ callback_logger <- callback_lambda(on_batch_end=callback_lr_log)
 callback_log_acc_lr <- LogMetrics$new()
 ```
 
+After some successfull training for a learning rate between 1e-5 and 1e-3, I extend the plot to a maximum of 0.1.
+
 ```{r}
 lr0<-1e-8
-lr_max<-0.01
+#lr_max<-0.01
+lr_max<-0.1
 
 #n_iteration :
-n<-100
+n<-120 #from 100 to 120
 q<-(lr_max/lr0)^(1/(n-1))
 ```
 
@@ -317,10 +320,11 @@ scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span
 
 Based on this graph I would go on a base_lr=1e-5, and a max lr of 1e-3.
 
-# Training with cyclic lr
+# Training
+
+## Training with cyclic lr
 
 After the improvement of the performance the neural net (by setting the right loss/activation of the last layer), it is time to focus a bit on the cyclic Learning Rate. Most of the code below came [from the cool data](http://thecooldata.com/2019/01/learning-rate-finder-with-cifar10-keras-r/). In contrast to the previous version (mode='exp_range', gamma=0.99), I will first try follow the guidelines from [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), by setting the learning rate into in a triangular mode (**NB**, without having the learning rate decreasing more than the minimum at the end of the cycle).
-
 
 ```{r}
 ####################
@@ -389,8 +393,12 @@ nb_epochs=10
 n_iter<-n*nb_epochs
 ```
 
+### About the learning rate 
+
+In previous commit I tried cyclical learning rate of 1e-3. Based on what it is said in the article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), I will try a more aggressive maximum learning rate (5e-3) for the training to see if there is an improvement.
+
 ```{r}
-l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
+l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=5e-3, step_size=floor(n/2),
                         mode='triangular', gamma=0.99, scale_fn=NULL, scale_mode='cycle')
 ```
 
@@ -433,14 +441,14 @@ history <- model %>% fit_generator(
 )
 ```
 
-```{r}
+```{r plot_performance}
 plot(history)
 ```
 
 Load best model :
 
 ```{r}
-##model<-load_model_hdf5("/kaggle/working/raw_model.h5")
+#model<-load_model_hdf5("raw_model.h5")
 ```
 
 # Submit
