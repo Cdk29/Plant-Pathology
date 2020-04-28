@@ -16,4 +16,4 @@ The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGV
 ## Current performance :
 
 
-![Train and Val loss and accuracy](https://github.com/Cdk29/Plant-Pathology/blob/master/resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-47-1.png)
+![Train and Val loss and accuracy](https://github.com/Cdk29/Plant-Pathology/blob/master/resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance-1.png)
