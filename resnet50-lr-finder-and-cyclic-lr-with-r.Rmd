@@ -395,10 +395,13 @@ n_iter<-n*nb_epochs
 
 ### About the learning rate 
 
-In previous commit I tried cyclical learning rate of 1e-3. Based on what it is said in the article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), I will try a more aggressive maximum learning rate (5e-3) for the training to see if there is an improvement.
+Based on the previous graph, I used a learning rate of 1e-3. The article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), mentionned that we can use a bigger learning rate as a regularizer, but a maximum learning rate of 5e-3 gave average results in my my previous attempt :
+
+![Val loss and Train loss for a maximum learning rate of 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
+
 
 ```{r}
-l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=5e-3, step_size=floor(n/2),
+l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
                         mode='triangular', gamma=0.99, scale_fn=NULL, scale_mode='cycle')
 ```
 
@@ -441,7 +444,7 @@ history <- model %>% fit_generator(
 )
 ```
 
-```{r plot_performance}
+```{r plot_perforance}
 plot(history)
 ```
 

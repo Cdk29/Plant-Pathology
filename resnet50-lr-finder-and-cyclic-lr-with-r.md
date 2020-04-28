@@ -24,9 +24,9 @@ policy.
   - bigger images
   - load best model after training :heavy\_check\_mark:
   - lr finder :heavy\_check\_mark:
-  - add data augmentation - \[x\]
-  - plot the data augmentation - \[x\]
-  - implement one cycle policy ? - \[x\]
+  - add data augmentation :heavy\_check\_mark:
+  - plot the data augmentation :heavy\_check\_mark:
+  - implement one cycle policy ? :heavy\_check\_mark:
   - visualization of what the convnets learn
   - fine
     tuning
@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 70.1 150.7 168 207.2 56 ...
-    ##  $ : num [1:32, 1:4] 0 0 1 1 1 0 1 1 0 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 58.9 120.1 55.8 164 81 ...
+    ##  $ : num [1:32, 1:4] 1 0 1 0 1 0 0 0 0 0 ...
 
 # Import pre-trained model
 
@@ -419,12 +419,16 @@ callback_logger <- callback_lambda(on_batch_end=callback_lr_log)
 callback_log_acc_lr <- LogMetrics$new()
 ```
 
+After some successfull training for a learning rate between 1e-5 and
+1e-3, I extend the plot to a maximum of 0.1.
+
 ``` r
 lr0<-1e-8
-lr_max<-0.01
+#lr_max<-0.01
+lr_max<-0.1
 
 #n_iteration :
-n<-100
+n<-120 #from 100 to 120
 q<-(lr_max/lr0)^(1/(n-1))
 ```
 
@@ -464,13 +468,13 @@ data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
 head(data)
 ```
 
-    ##   Learning_rate     Loss
-    ## 1  1.149757e-08 1.120135
-    ## 2  1.321941e-08 1.006694
-    ## 3  1.519911e-08 1.244990
-    ## 4  1.747528e-08 1.028072
-    ## 5  2.009233e-08 1.206817
-    ## 6  2.310130e-08 1.081789
+    ##   Learning_rate      Loss
+    ## 1  1.145048e-08 1.1687186
+    ## 2  1.311134e-08 0.9881935
+    ## 3  1.501311e-08 1.2071823
+    ## 4  1.719072e-08 1.0566913
+    ## 5  1.968419e-08 1.1361701
+    ## 6  2.253934e-08 1.1140846
 
 Learning rate vs loss
 :
@@ -493,17 +497,17 @@ scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span
 
     ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
 
-    ## Warning: Removed 20 rows containing non-finite values (stat_smooth).
+    ## Warning: Removed 24 rows containing non-finite values (stat_smooth).
 
-    ## Warning: Removed 20 rows containing missing values (geom_point).
-
-    ## Warning: Removed 3 rows containing missing values (geom_smooth).
+    ## Warning: Removed 24 rows containing missing values (geom_point).
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
 
 Based on this graph I would go on a base\_lr=1e-5, and a max lr of 1e-3.
 
-# Training with cyclic lr
+# Training
+
+## Training with cyclic lr
 
 After the improvement of the performance the neural net (by setting the
 right loss/activation of the last layer), it is time to focus a bit on
@@ -582,6 +586,17 @@ nb_epochs=10
 n_iter<-n*nb_epochs
 ```
 
+### About the learning rate
+
+Based on the previous graph, I used a learning rate of 1e-3. The article
+[The 1cycle policy](https://sgugger.github.io/the-1cycle-policy.html),
+mentionned that we can use a bigger learning rate as a regularizer, but
+a maximum learning rate of 5e-3 gave average results in my my previous
+attempt :
+
+![Val loss and Train loss for a maximum learning rate of
+5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
+
 ``` r
 l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
                         mode='triangular', gamma=0.99, scale_fn=NULL, scale_mode='cycle')
@@ -638,12 +653,12 @@ plot(history)
 
     ## `geom_smooth()` using formula 'y ~ x'
 
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance-1.png)<!-- -->
 
 Load best model :
 
 ``` r
-##model<-load_model_hdf5("/kaggle/working/raw_model.h5")
+#model<-load_model_hdf5("raw_model.h5")
 ```
 
 # Submit
