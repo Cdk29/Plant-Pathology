@@ -7,7 +7,7 @@ output: github_document
 
 Long ago, I have learned the basics of deep learning with keras. I got more used to Fast.ai since then.
 
-But I am a R practitioner and I want to know a framework that I can use with R. Also, Keras is sometimes required explicity in some job offers/projects, or for academic research. So in this kernel, I relearn it with the book *Deep Learning with R*. For the moment my aim is to have something that work from A to Z, and iterate over it.
+But I am a R practitioner and I want to know a framework that I can use with R. Also, Keras is sometimes required explicity in some job offers/projects, or for academic research. So in this Rmarkdown document, I relearn it with the book *Deep Learning with R*. For the moment my aim is to have something that work from A to Z, and iterate over it.
 
 The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGVC7](https://www.kaggle.com/c/plant-pathology-2020-fgvc7). In this notebook I also reimplement a learning rate finder and the one cycle policy.
 
