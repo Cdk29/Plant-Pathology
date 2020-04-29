@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 66 124 75.6 192.4 135.8 ...
-    ##  $ : num [1:32, 1:4] 0 1 1 1 0 0 0 0 0 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 76 52.8 110 135 48.1 ...
+    ##  $ : num [1:32, 1:4] 0 0 0 1 0 0 0 0 1 0 ...
 
 # Import pre-trained model
 
@@ -468,13 +468,13 @@ data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
 head(data)
 ```
 
-    ##   Learning_rate     Loss
-    ## 1  1.145048e-08 1.108392
-    ## 2  1.311134e-08 1.103797
-    ## 3  1.501311e-08 1.025971
-    ## 4  1.719072e-08 1.084623
-    ## 5  1.968419e-08 1.125008
-    ## 6  2.253934e-08 1.098663
+    ##   Learning_rate      Loss
+    ## 1  1.145048e-08 1.0334737
+    ## 2  1.311134e-08 1.2092899
+    ## 3  1.501311e-08 1.1567343
+    ## 4  1.719072e-08 0.9763259
+    ## 5  1.968419e-08 0.9965426
+    ## 6  2.253934e-08 1.0602639
 
 Learning rate vs loss
 :
@@ -581,8 +581,6 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
 }
 ```
 
-## Trying cosine annealing
-
 ``` r
 n=40
 nb_epochs=10
@@ -599,6 +597,42 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 ```
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
+
+#### Reproducing cosine annealing
+
+``` r
+l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate <- rep(l_rate[n:(n*2)], nb_epochs)
+```
+
+``` r
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+
+##### Combining the two
+
+``` r
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
+                        mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
+
+l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
+```
+
+``` r
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
 
 Clean model for training :
 
@@ -646,44 +680,6 @@ plot(history)
     ## `geom_smooth()` using formula 'y ~ x'
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance-1.png)<!-- -->
-
-## Trying cosine annealing
-
-``` r
-n=40
-nb_epochs=5
-n_iter<-n*nb_epochs
-```
-
-``` r
-l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
-                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
-
-l_rate <- rep(l_rate[n:(n*2)], nb_epochs)
-```
-
-``` r
-plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
-```
-
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
-
-``` r
-history <- model %>% fit_generator(
-    train_generator,
-    steps_per_epoch=n,
-    epochs = nb_epochs,
-    callbacks = callback_list, #callback to update cylic lr
-    validation_data = validation_generator,
-    validation_step=50
-)
-```
-
-``` r
-plot(history)
-```
-
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
 
 Load best model :
 
