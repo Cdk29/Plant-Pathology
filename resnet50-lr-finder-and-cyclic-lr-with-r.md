@@ -37,14 +37,14 @@ policy.
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ─────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──
+    ## ── Attaching packages ──────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──
 
     ## ✓ ggplot2 3.3.0     ✓ purrr   0.3.4
     ## ✓ tibble  3.0.0     ✓ dplyr   0.8.5
     ## ✓ tidyr   1.0.2     ✓ stringr 1.4.0
     ## ✓ readr   1.3.1     ✓ forcats 0.5.0
 
-    ## ── Conflicts ────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ─────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
     ## x dplyr::filter() masks stats::filter()
     ## x dplyr::lag()    masks stats::lag()
 
@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 58.9 120.1 55.8 164 81 ...
-    ##  $ : num [1:32, 1:4] 1 0 1 0 1 0 0 0 0 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 66 124 75.6 192.4 135.8 ...
+    ##  $ : num [1:32, 1:4] 0 1 1 1 0 0 0 0 0 0 ...
 
 # Import pre-trained model
 
@@ -468,13 +468,13 @@ data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
 head(data)
 ```
 
-    ##   Learning_rate      Loss
-    ## 1  1.145048e-08 1.1687186
-    ## 2  1.311134e-08 0.9881935
-    ## 3  1.501311e-08 1.2071823
-    ## 4  1.719072e-08 1.0566913
-    ## 5  1.968419e-08 1.1361701
-    ## 6  2.253934e-08 1.1140846
+    ##   Learning_rate     Loss
+    ## 1  1.145048e-08 1.108392
+    ## 2  1.311134e-08 1.103797
+    ## 3  1.501311e-08 1.025971
+    ## 4  1.719072e-08 1.084623
+    ## 5  1.968419e-08 1.125008
+    ## 6  2.253934e-08 1.098663
 
 Learning rate vs loss
 :
@@ -564,6 +564,7 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
             if(mode=='triangular2'){scale_fn <- function(x) 1/(2^(x-1)); scale_mode <- 'cycle';}
             if(mode=='exp_range'){scale_fn <- function(x) gamma^(x); scale_mode <- 'iterations';}
             if(mode=='sinus'){scale_fn <- function(x) 0.5*(1+sin(x*pi/2)); scale_mode <- 'cycle';}
+            if(mode=='halfcosine'){scale_fn <- function(x) 0.5*(1+cos(x*pi)^2); scale_mode <- 'cycle';}
       }
       lr <- list()
       if(is.vector(iteration)==TRUE){
@@ -580,26 +581,17 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
 }
 ```
 
+## Trying cosine annealing
+
 ``` r
 n=40
 nb_epochs=10
 n_iter<-n*nb_epochs
 ```
 
-### About the learning rate
-
-Based on the previous graph, I used a learning rate of 1e-3. The article
-[The 1cycle policy](https://sgugger.github.io/the-1cycle-policy.html),
-mentionned that we can use a bigger learning rate as a regularizer, but
-a maximum learning rate of 5e-3 gave average results in my my previous
-attempt :
-
-![Val loss and Train loss for a maximum learning rate of
-5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
-
 ``` r
 l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
-                        mode='triangular', gamma=0.99, scale_fn=NULL, scale_mode='cycle')
+                        mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
 ```
 
 ``` r
@@ -655,11 +647,60 @@ plot(history)
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance-1.png)<!-- -->
 
+## Trying cosine annealing
+
+``` r
+n=40
+nb_epochs=5
+n_iter<-n*nb_epochs
+```
+
+``` r
+l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate <- rep(l_rate[n:(n*2)], nb_epochs)
+```
+
+``` r
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+
+``` r
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
+
+``` r
+plot(history)
+```
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
+
 Load best model :
 
 ``` r
 #model<-load_model_hdf5("raw_model.h5")
 ```
+
+### About the learning rate
+
+Based on the previous graph, I used a learning rate of 1e-3. The article
+[The 1cycle policy](https://sgugger.github.io/the-1cycle-policy.html),
+mentionned that we can use a bigger learning rate as a regularizer, but
+a maximum learning rate of 5e-3 gave average results in my my previous
+attempt :
+
+![Val loss and Train loss for a maximum learning rate of
+5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
 
 # Submit
 
