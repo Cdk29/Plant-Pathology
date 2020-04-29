@@ -388,8 +388,6 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
 }
 ```
 
-## Trying cosine annealing
-
 ```{r}
 n=40
 nb_epochs=10
@@ -400,6 +398,43 @@ n_iter<-n*nb_epochs
 l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
                         mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
 ```
+
+
+```{r}
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+#### Reproducing cosine annealing
+
+
+
+```{r}
+l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate <- rep(l_rate[n:(n*2)], nb_epochs)
+```
+
+```{r}
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+##### Combining the two
+
+```{r}
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
+                        mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
+
+l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
+```
+
+
 
 ```{r}
 plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
@@ -442,41 +477,6 @@ history <- model %>% fit_generator(
 ```
 
 ```{r plot_perforance}
-plot(history)
-```
-
-
-## Trying cosine annealing
-
-```{r}
-n=40
-nb_epochs=5
-n_iter<-n*nb_epochs
-```
-
-```{r}
-l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
-                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
-
-l_rate <- rep(l_rate[n:(n*2)], nb_epochs)
-```
-
-```{r}
-plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
-```
-
-```{r}
-history <- model %>% fit_generator(
-    train_generator,
-    steps_per_epoch=n,
-    epochs = nb_epochs,
-    callbacks = callback_list, #callback to update cylic lr
-    validation_data = validation_generator,
-    validation_step=50
-)
-```
-
-```{r}
 plot(history)
 ```
 
