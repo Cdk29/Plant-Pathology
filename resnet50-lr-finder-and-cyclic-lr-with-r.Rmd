@@ -371,6 +371,7 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
             if(mode=='triangular2'){scale_fn <- function(x) 1/(2^(x-1)); scale_mode <- 'cycle';}
             if(mode=='exp_range'){scale_fn <- function(x) gamma^(x); scale_mode <- 'iterations';}
             if(mode=='sinus'){scale_fn <- function(x) 0.5*(1+sin(x*pi/2)); scale_mode <- 'cycle';}
+            if(mode=='halfcosine'){scale_fn <- function(x) 0.5*(1+cos(x*pi)^2); scale_mode <- 'cycle';}
       }
       lr <- list()
       if(is.vector(iteration)==TRUE){
@@ -387,27 +388,23 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
 }
 ```
 
+## Trying cosine annealing
+
 ```{r}
 n=40
 nb_epochs=10
 n_iter<-n*nb_epochs
 ```
 
-### About the learning rate 
-
-Based on the previous graph, I used a learning rate of 1e-3. The article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), mentionned that we can use a bigger learning rate as a regularizer, but a maximum learning rate of 5e-3 gave average results in my my previous attempt :
-
-![Val loss and Train loss for a maximum learning rate of 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
-
-
 ```{r}
 l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
-                        mode='triangular', gamma=0.99, scale_fn=NULL, scale_mode='cycle')
+                        mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
 ```
 
 ```{r}
 plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
 ```
+
 
 Clean model for training :
 
@@ -448,11 +445,52 @@ history <- model %>% fit_generator(
 plot(history)
 ```
 
+
+## Trying cosine annealing
+
+```{r}
+n=40
+nb_epochs=5
+n_iter<-n*nb_epochs
+```
+
+```{r}
+l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate <- rep(l_rate[n:(n*2)], nb_epochs)
+```
+
+```{r}
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+```{r}
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
+
+```{r}
+plot(history)
+```
+
 Load best model :
 
 ```{r}
 #model<-load_model_hdf5("raw_model.h5")
 ```
+
+### About the learning rate 
+
+Based on the previous graph, I used a learning rate of 1e-3. The article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), mentionned that we can use a bigger learning rate as a regularizer, but a maximum learning rate of 5e-3 gave average results in my my previous attempt :
+
+![Val loss and Train loss for a maximum learning rate of 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
 
 # Submit
 
