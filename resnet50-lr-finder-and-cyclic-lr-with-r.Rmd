@@ -143,7 +143,7 @@ train_generator <- flow_images_from_dataframe(dataframe = train_labels,
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
                                               target_size = c(512, 512),
-                                              batch_size=8)
+                                              batch_size=32)
 ```
 
 ```{r}
@@ -153,7 +153,7 @@ validation_generator <- flow_images_from_dataframe(dataframe = val_labels,
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
                                               target_size = c(512, 512),
-                                              batch_size=8)
+                                              batch_size=32)
 ```
 
 ```{r}
@@ -295,7 +295,7 @@ history <- model %>% fit_generator(
     epochs = 1,
     callbacks = callback_list,
     validation_data = validation_generator,
-    validation_step=20
+    validation_step=30
 )
 ```
 
@@ -390,7 +390,7 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
 
 ```{r}
 n=40
-nb_epochs=5
+nb_epochs=10
 n_iter<-n*nb_epochs
 ```
 
@@ -419,15 +419,7 @@ l_rate <- rep(l_rate[n:(n*2)], nb_epochs)
 plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
 ```
 
-#### Combining the two
-
-NB : I reduced the number of epoch in the previous chunk to made the graphs more readable. We will change it here :
-
-```{r}
-nb_epochs=15
-```
-
-
+##### Combining the two
 
 ```{r}
 l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
@@ -480,7 +472,7 @@ history <- model %>% fit_generator(
     epochs = nb_epochs,
     callbacks = callback_list, #callback to update cylic lr
     validation_data = validation_generator,
-    validation_step=20
+    validation_step=50
 )
 ```
 
@@ -496,7 +488,7 @@ Load best model :
 
 ### About the learning rate 
 
-Based on the previous graph, I used a learning rate of 1e-3. The article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), mentionned that we can use a bigger learning rate as a regularizer, but a maximum learning rate of 5e-3 gave average results in my my previous attempt (NB : **for an image size of 224**) :
+Based on the previous graph, I used a learning rate of 1e-3. The article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), mentionned that we can use a bigger learning rate as a regularizer, but a maximum learning rate of 5e-3 gave average results in my my previous attempt :
 
 ![Val loss and Train loss for a maximum learning rate of 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
 
