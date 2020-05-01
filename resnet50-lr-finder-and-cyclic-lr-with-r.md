@@ -37,14 +37,14 @@ policy.
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ──────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──
+    ## ── Attaching packages ─────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──
 
     ## ✓ ggplot2 3.3.0     ✓ purrr   0.3.4
     ## ✓ tibble  3.0.0     ✓ dplyr   0.8.5
     ## ✓ tidyr   1.0.2     ✓ stringr 1.4.0
     ## ✓ readr   1.3.1     ✓ forcats 0.5.0
 
-    ## ── Conflicts ─────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
     ## x dplyr::filter() masks stats::filter()
     ## x dplyr::lag()    masks stats::lag()
 
@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 76 52.8 110 135 48.1 ...
-    ##  $ : num [1:32, 1:4] 0 0 0 1 0 0 0 0 1 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 129.4 141.6 254 94.8 70.4 ...
+    ##  $ : num [1:32, 1:4] 1 1 0 0 0 1 0 0 1 0 ...
 
 # Import pre-trained model
 
@@ -332,7 +332,8 @@ fast\_ai](https://docs.fast.ai/vision.learner.html#create_head). Since
 there is a “funny” pooling operation, The AdaptiveConcatPool2d (adaptive
 average pooling and adaptive max pooling), I will use a max pooling,
 because we are most interresting to know if there is a rust or scab,
-that something on “average”.
+that something on “average”. After testing, adding a
+layer\_global\_average\_pooling\_2d() indeed gave poor results.
 
 One of the most important aspect of deep learning is to set up a good
 loss function and last layer activation. Since it is a **multiclass**
@@ -469,12 +470,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-    ## 1  1.145048e-08 1.0334737
-    ## 2  1.311134e-08 1.2092899
-    ## 3  1.501311e-08 1.1567343
-    ## 4  1.719072e-08 0.9763259
-    ## 5  1.968419e-08 0.9965426
-    ## 6  2.253934e-08 1.0602639
+    ## 1  1.145048e-08 1.1035540
+    ## 2  1.311134e-08 1.0811859
+    ## 3  1.501311e-08 0.8902329
+    ## 4  1.719072e-08 0.9373264
+    ## 5  1.968419e-08 1.0631230
+    ## 6  2.253934e-08 0.9979775
 
 Learning rate vs loss
 :
@@ -645,17 +646,23 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
+#### Better metric
+
+Addition of the metric categorical\_accuracy to be sure of the accuracy
+plotted.
+
 ``` r
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
     loss="binary_crossentropy",
-    metrics='accuracy'
+    #metrics = c("categorical_accuracy")
+    metrics = "accuracy"
 )
 ```
 
 ``` r
 callback_list<-list(callback_lr, #callback to update lr
-    callback_model_checkpoint(filepath = "raw_model.h5", monitor = "val_acc", save_best_only = TRUE ))
+    callback_model_checkpoint(filepath = "raw_model.h5", monitor = "val_acc", save_best_only = TRUE))
 ```
 
     ## Warning in callback_model_checkpoint(filepath = "raw_model.h5", monitor =
@@ -697,6 +704,129 @@ attempt :
 
 ![Val loss and Train loss for a maximum learning rate of
 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
+
+## Fine tuning
+
+### Unfreezing the model
+
+Following line to got the name of the layer we want to unfreeze
+(res5a\_branch2a)
+
+``` r
+#summary(conv_base)
+```
+
+[See this link to
+see](https://keras.rstudio.com/reference/freeze_layers.html) that it
+works to unfreeze conv\_base independently of the sequential
+    model.
+
+``` r
+unfreeze_weights(conv_base, from="res5a_branch2a")
+```
+
+``` r
+summary(model)
+```
+
+    ## ________________________________________________________________________________
+    ## Layer (type)                        Output Shape                    Param #     
+    ## ================================================================================
+    ## resnet50 (Model)                    (None, 7, 7, 2048)              23587712    
+    ## ________________________________________________________________________________
+    ## global_max_pooling2d_2 (GlobalMaxPo (None, 2048)                    0           
+    ## ________________________________________________________________________________
+    ## batch_normalization_2 (BatchNormali (None, 2048)                    8192        
+    ## ________________________________________________________________________________
+    ## dropout_2 (Dropout)                 (None, 2048)                    0           
+    ## ________________________________________________________________________________
+    ## dense_2 (Dense)                     (None, 4)                       8196        
+    ## ================================================================================
+    ## Total params: 8,628,100
+    ## Trainable params: 12,292
+    ## Non-trainable params: 8,615,808
+    ## ________________________________________________________________________________
+
+#### Learning rate finder for unfreezed model
+
+``` r
+callback_list = list(callback_lr, callback_logger, callback_log_acc_lr)
+```
+
+Here I create a copy for the lr\_finder, to spare the real model.
+
+``` r
+model_lr_finder<-model
+```
+
+``` r
+lr0<-1e-8
+lr_max<-0.1
+
+#n_iteration :
+n<-120
+q<-(lr_max/lr0)^(1/(n-1))
+i<-1:n
+l_rate<-lr0*(q^i)
+```
+
+``` r
+i<-1:n
+l_rate<-lr0*(q^i)
+```
+
+``` r
+history <- model_lr_finder %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = 1,
+    callbacks = callback_list,
+    validation_data = validation_generator,
+    validation_step=30
+)
+```
+
+``` r
+data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
+head(data)
+```
+
+    ##   Learning_rate      Loss
+    ## 1  1.145048e-08 1.1035540
+    ## 2  1.311134e-08 1.0811859
+    ## 3  1.501311e-08 0.8902329
+    ## 4  1.719072e-08 0.9373264
+    ## 5  1.968419e-08 1.0631230
+    ## 6  2.253934e-08 0.9979775
+
+Learning rate vs loss
+:
+
+``` r
+ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  geom_smooth(span = 0.5)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
+
+More centered on the moment when the slope goes down :
+
+``` r
+limits<-quantile(data$Loss, probs = c(0.10, 0.90))
+ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + 
+scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span = 0.5)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+
+    ## Warning: Removed 48 rows containing non-finite values (stat_smooth).
+
+    ## Warning: Removed 48 rows containing missing values (geom_point).
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
+
+#### Fine tuning of the model
 
 # Submit
 
