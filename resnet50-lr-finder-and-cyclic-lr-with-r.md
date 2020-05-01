@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 129.4 141.6 254 94.8 70.4 ...
-    ##  $ : num [1:32, 1:4] 1 1 0 0 0 1 0 0 1 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 91.6 166.8 78 66.3 183 ...
+    ##  $ : num [1:32, 1:4] 0 1 0 1 1 0 1 1 0 0 ...
 
 # Import pre-trained model
 
@@ -470,12 +470,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-    ## 1  1.145048e-08 1.1035540
-    ## 2  1.311134e-08 1.0811859
-    ## 3  1.501311e-08 0.8902329
-    ## 4  1.719072e-08 0.9373264
-    ## 5  1.968419e-08 1.0631230
-    ## 6  2.253934e-08 0.9979775
+    ## 1  1.145048e-08 1.0814290
+    ## 2  1.311134e-08 1.2165661
+    ## 3  1.501311e-08 1.0346155
+    ## 4  1.719072e-08 1.0561068
+    ## 5  1.968419e-08 1.1090004
+    ## 6  2.253934e-08 0.9447393
 
 Learning rate vs loss
 :
@@ -646,16 +646,10 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
-#### Better metric
-
-Addition of the metric categorical\_accuracy to be sure of the accuracy
-plotted.
-
 ``` r
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
     loss="binary_crossentropy",
-    #metrics = c("categorical_accuracy")
     metrics = "accuracy"
 )
 ```
@@ -792,12 +786,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-    ## 1  1.145048e-08 1.1035540
-    ## 2  1.311134e-08 1.0811859
-    ## 3  1.501311e-08 0.8902329
-    ## 4  1.719072e-08 0.9373264
-    ## 5  1.968419e-08 1.0631230
-    ## 6  2.253934e-08 0.9979775
+    ## 1  1.145048e-08 1.0814290
+    ## 2  1.311134e-08 1.2165661
+    ## 3  1.501311e-08 1.0346155
+    ## 4  1.719072e-08 1.0561068
+    ## 5  1.968419e-08 1.1090004
+    ## 6  2.253934e-08 0.9447393
 
 Learning rate vs loss
 :
@@ -810,23 +804,68 @@ ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  g
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
 
-More centered on the moment when the slope goes down :
+#### Fine tuning of the model
 
 ``` r
-limits<-quantile(data$Loss, probs = c(0.10, 0.90))
-ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + 
-scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span = 0.5)
+n=40
+nb_epochs=10
+n_iter<-n*nb_epochs
 ```
 
-    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+``` r
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-6, max_lr=(1e-3)/5, step_size=floor(n/2),
+                        mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
-    ## Warning: Removed 48 rows containing non-finite values (stat_smooth).
 
-    ## Warning: Removed 48 rows containing missing values (geom_point).
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-6, max_lr=(1e-3)/5, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
+l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
 
-#### Fine tuning of the model
+l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
+```
+
+``` r
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
+
+``` r
+model %>% compile(
+    optimizer=optimizer_rmsprop(lr=1e-5),
+    loss="binary_crossentropy",
+    metrics = "accuracy"
+)
+```
+
+``` r
+callback_list<-list(callback_lr, #callback to update lr
+    callback_model_checkpoint(filepath = "fine_tuned_model.h5", monitor = "val_acc", save_best_only = TRUE))
+```
+
+    ## Warning in callback_model_checkpoint(filepath = "fine_tuned_model.h5", monitor
+    ## = "val_acc", : The save_freq argument is only used by TensorFlow >= 1.14. Update
+    ## TensorFlow or use save_freq = NULL
+
+``` r
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
+
+``` r
+plot(history)
+```
+
+    ## `geom_smooth()` using formula 'y ~ x'
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned-1.png)<!-- -->
 
 # Submit
 

@@ -452,15 +452,11 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
-#### Better metric
-
-Addition of the metric categorical_accuracy to be sure of the accuracy plotted.
 
 ```{r}
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
     loss="binary_crossentropy",
-    #metrics = c("categorical_accuracy")
     metrics = "accuracy"
 )
 ```
@@ -570,15 +566,70 @@ Learning rate vs loss :
 ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  geom_smooth(span = 0.5)
 ```
 
-More centered on the moment when the slope goes down :
+#### Fine tuning of the model
+
 
 ```{r}
-limits<-quantile(data$Loss, probs = c(0.10, 0.90))
-ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + 
-scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span = 0.5)
+n=40
+nb_epochs=10
+n_iter<-n*nb_epochs
 ```
 
-#### Fine tuning of the model
+```{r}
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-6, max_lr=(1e-3)/5, step_size=floor(n/2),
+                        mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-6, max_lr=(1e-3)/5, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
+
+l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
+
+
+```
+
+```{r}
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+
+```{r}
+model %>% compile(
+    optimizer=optimizer_rmsprop(lr=1e-5),
+    loss="binary_crossentropy",
+    metrics = "accuracy"
+)
+```
+
+```{r}
+callback_list<-list(callback_lr, #callback to update lr
+    callback_model_checkpoint(filepath = "fine_tuned_model.h5", monitor = "val_acc", save_best_only = TRUE))
+```
+
+```{r}
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
+
+
+```{r plot_perforance_fine_tuned}
+plot(history)
+```
+
+
+
+
+
+
+
 
 # Submit
 
