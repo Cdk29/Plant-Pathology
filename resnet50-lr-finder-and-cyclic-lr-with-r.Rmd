@@ -142,7 +142,7 @@ train_generator <- flow_images_from_dataframe(dataframe = train_labels,
                                               class_mode = "other",
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-                                              target_size = c(512, 512),
+                                              target_size = c(224, 224),
                                               batch_size=32)
 ```
 
@@ -152,7 +152,7 @@ validation_generator <- flow_images_from_dataframe(dataframe = val_labels,
                                               class_mode = "other",
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-                                              target_size = c(512, 512),
+                                              target_size = c(224, 224),
                                               batch_size=32)
 ```
 
@@ -170,7 +170,7 @@ str(batch)
 How to choose the parameters ? c(224, 224, 3) is the default of Resnet, came from the default if include_top is set to true. 
 
 ```{r}
-conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(512, 512, 3))
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
 ```
 
 ```{r}
@@ -452,17 +452,22 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
+#### Better metric
+
+Addition of the metric categorical_accuracy to be sure of the accuracy plotted.
+
 ```{r}
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
     loss="binary_crossentropy",
-    metrics='accuracy'
+    #metrics = c("categorical_accuracy")
+    metrics = "accuracy"
 )
 ```
 
 ```{r}
 callback_list<-list(callback_lr, #callback to update lr
-    callback_model_checkpoint(filepath = "raw_model.h5", monitor = "val_acc", save_best_only = TRUE ))
+    callback_model_checkpoint(filepath = "raw_model.h5", monitor = "val_acc", save_best_only = TRUE))
 ```
 
 ```{r}
@@ -491,6 +496,89 @@ Load best model :
 Based on the previous graph, I used a learning rate of 1e-3. The article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), mentionned that we can use a bigger learning rate as a regularizer, but a maximum learning rate of 5e-3 gave average results in my my previous attempt :
 
 ![Val loss and Train loss for a maximum learning rate of 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
+
+## Fine tuning
+
+### Unfreezing the model 
+
+Following line to got the name of the layer we want to unfreeze (res5a_branch2a)
+
+```{r}
+#summary(conv_base)
+```
+
+[See this link to see](https://keras.rstudio.com/reference/freeze_layers.html) that it works to unfreeze conv_base independently of the sequential model.
+
+```{r}
+unfreeze_weights(conv_base, from="res5a_branch2a")
+```
+
+```{r}
+summary(model)
+```
+
+
+#### Learning rate finder for unfreezed model
+
+```{r}
+callback_list = list(callback_lr, callback_logger, callback_log_acc_lr)
+```
+
+Here I create a copy for the lr_finder, to spare the real model.
+
+```{r}
+model_lr_finder<-model
+```
+
+```{r}
+lr0<-1e-8
+lr_max<-0.1
+
+#n_iteration :
+n<-120
+q<-(lr_max/lr0)^(1/(n-1))
+i<-1:n
+l_rate<-lr0*(q^i)
+```
+
+```{r}
+i<-1:n
+l_rate<-lr0*(q^i)
+```
+
+
+```{r}
+history <- model_lr_finder %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = 1,
+    callbacks = callback_list,
+    validation_data = validation_generator,
+    validation_step=30
+)
+```
+
+
+```{r}
+data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
+head(data)
+```
+
+Learning rate vs loss :
+
+```{r}
+ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  geom_smooth(span = 0.5)
+```
+
+More centered on the moment when the slope goes down :
+
+```{r}
+limits<-quantile(data$Loss, probs = c(0.10, 0.90))
+ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + 
+scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span = 0.5)
+```
+
+#### Fine tuning of the model
 
 # Submit
 
