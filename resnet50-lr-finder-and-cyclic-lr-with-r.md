@@ -287,8 +287,13 @@ str(batch)
 ```
 
     ## List of 2
+<<<<<<< HEAD
     ##  $ : num [1:32, 1:224, 1:224, 1:3] 91.6 166.8 78 66.3 183 ...
     ##  $ : num [1:32, 1:4] 0 1 0 1 1 0 1 1 0 0 ...
+=======
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 129.4 141.6 254 94.8 70.4 ...
+    ##  $ : num [1:32, 1:4] 1 1 0 0 0 1 0 0 1 0 ...
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 
 # Import pre-trained model
 
@@ -470,12 +475,21 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
+<<<<<<< HEAD
     ## 1  1.145048e-08 1.0814290
     ## 2  1.311134e-08 1.2165661
     ## 3  1.501311e-08 1.0346155
     ## 4  1.719072e-08 1.0561068
     ## 5  1.968419e-08 1.1090004
     ## 6  2.253934e-08 0.9447393
+=======
+    ## 1  1.145048e-08 1.1035540
+    ## 2  1.311134e-08 1.0811859
+    ## 3  1.501311e-08 0.8902329
+    ## 4  1.719072e-08 0.9373264
+    ## 5  1.968419e-08 1.0631230
+    ## 6  2.253934e-08 0.9979775
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 
 Learning rate vs loss
 :
@@ -646,10 +660,22 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
+<<<<<<< HEAD
+=======
+#### Better metric
+
+Addition of the metric categorical\_accuracy to be sure of the accuracy
+plotted.
+
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 ``` r
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
     loss="binary_crossentropy",
+<<<<<<< HEAD
+=======
+    #metrics = c("categorical_accuracy")
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
     metrics = "accuracy"
 )
 ```
@@ -786,12 +812,21 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
+<<<<<<< HEAD
     ## 1  1.145048e-08 1.0814290
     ## 2  1.311134e-08 1.2165661
     ## 3  1.501311e-08 1.0346155
     ## 4  1.719072e-08 1.0561068
     ## 5  1.968419e-08 1.1090004
     ## 6  2.253934e-08 0.9447393
+=======
+    ## 1  1.145048e-08 1.1035540
+    ## 2  1.311134e-08 1.0811859
+    ## 3  1.501311e-08 0.8902329
+    ## 4  1.719072e-08 0.9373264
+    ## 5  1.968419e-08 1.0631230
+    ## 6  2.253934e-08 0.9979775
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 
 Learning rate vs loss
 :
@@ -804,6 +839,7 @@ ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  g
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
 
+<<<<<<< HEAD
 #### Fine tuning of the model
 
 ``` r
@@ -866,6 +902,25 @@ plot(history)
     ## `geom_smooth()` using formula 'y ~ x'
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned-1.png)<!-- -->
+=======
+More centered on the moment when the slope goes down :
+
+``` r
+limits<-quantile(data$Loss, probs = c(0.10, 0.90))
+ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + 
+scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span = 0.5)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+
+    ## Warning: Removed 48 rows containing non-finite values (stat_smooth).
+
+    ## Warning: Removed 48 rows containing missing values (geom_point).
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
+
+#### Fine tuning of the model
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 
 # Submit
 

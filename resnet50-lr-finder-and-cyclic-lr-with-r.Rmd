@@ -452,11 +452,21 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
+<<<<<<< HEAD
+=======
+#### Better metric
+
+Addition of the metric categorical_accuracy to be sure of the accuracy plotted.
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 
 ```{r}
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
     loss="binary_crossentropy",
+<<<<<<< HEAD
+=======
+    #metrics = c("categorical_accuracy")
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
     metrics = "accuracy"
 )
 ```
@@ -566,6 +576,7 @@ Learning rate vs loss :
 ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  geom_smooth(span = 0.5)
 ```
 
+<<<<<<< HEAD
 #### Fine tuning of the model
 
 
@@ -630,6 +641,17 @@ plot(history)
 
 
 
+=======
+More centered on the moment when the slope goes down :
+
+```{r}
+limits<-quantile(data$Loss, probs = c(0.10, 0.90))
+ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + 
+scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span = 0.5)
+```
+
+#### Fine tuning of the model
+>>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 
 # Submit
 
