@@ -37,14 +37,14 @@ policy.
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ─────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──
+    ## ── Attaching packages ──────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──
 
     ## ✓ ggplot2 3.3.0     ✓ purrr   0.3.4
     ## ✓ tibble  3.0.0     ✓ dplyr   0.8.5
     ## ✓ tidyr   1.0.2     ✓ stringr 1.4.0
     ## ✓ readr   1.3.1     ✓ forcats 0.5.0
 
-    ## ── Conflicts ────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ─────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
     ## x dplyr::filter() masks stats::filter()
     ## x dplyr::lag()    masks stats::lag()
 
@@ -261,8 +261,8 @@ train_generator <- flow_images_from_dataframe(dataframe = train_labels,
                                               class_mode = "other",
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-                                              target_size = c(512, 512),
-                                              batch_size=8)
+                                              target_size = c(224, 224),
+                                              batch_size=32)
 ```
 
 ``` r
@@ -271,8 +271,8 @@ validation_generator <- flow_images_from_dataframe(dataframe = val_labels,
                                               class_mode = "other",
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-                                              target_size = c(512, 512),
-                                              batch_size=8)
+                                              target_size = c(224, 224),
+                                              batch_size=32)
 ```
 
 ``` r
@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:8, 1:512, 1:512, 1:3] 93.8 118.1 69.7 79.8 77 ...
-    ##  $ : num [1:8, 1:4] 1 0 0 0 1 0 0 0 0 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 76 52.8 110 135 48.1 ...
+    ##  $ : num [1:32, 1:4] 0 0 0 1 0 0 0 0 1 0 ...
 
 # Import pre-trained model
 
@@ -297,7 +297,7 @@ came from the default if include\_top is set to
 true.
 
 ``` r
-conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(512, 512, 3))
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
 ```
 
 ``` r
@@ -332,8 +332,7 @@ fast\_ai](https://docs.fast.ai/vision.learner.html#create_head). Since
 there is a “funny” pooling operation, The AdaptiveConcatPool2d (adaptive
 average pooling and adaptive max pooling), I will use a max pooling,
 because we are most interresting to know if there is a rust or scab,
-that something on “average”. After testing, adding a
-layer\_global\_average\_pooling\_2d() indeed gave poor results.
+that something on “average”.
 
 One of the most important aspect of deep learning is to set up a good
 loss function and last layer activation. Since it is a **multiclass**
@@ -358,7 +357,7 @@ model
     ## ________________________________________________________________________________
     ## Layer (type)                        Output Shape                    Param #     
     ## ================================================================================
-    ## resnet50 (Model)                    (None, 16, 16, 2048)            23587712    
+    ## resnet50 (Model)                    (None, 7, 7, 2048)              23587712    
     ## ________________________________________________________________________________
     ## global_max_pooling2d_1 (GlobalMaxPo (None, 2048)                    0           
     ## ________________________________________________________________________________
@@ -460,7 +459,7 @@ history <- model %>% fit_generator(
     epochs = 1,
     callbacks = callback_list,
     validation_data = validation_generator,
-    validation_step=20
+    validation_step=30
 )
 ```
 
@@ -470,12 +469,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-    ## 1  1.145048e-08 1.0479560
-    ## 2  1.311134e-08 1.0900357
-    ## 3  1.501311e-08 1.3692715
-    ## 4  1.719072e-08 0.8332791
-    ## 5  1.968419e-08 0.9705950
-    ## 6  2.253934e-08 0.9747454
+    ## 1  1.145048e-08 1.0334737
+    ## 2  1.311134e-08 1.2092899
+    ## 3  1.501311e-08 1.1567343
+    ## 4  1.719072e-08 0.9763259
+    ## 5  1.968419e-08 0.9965426
+    ## 6  2.253934e-08 1.0602639
 
 Learning rate vs loss
 :
@@ -584,7 +583,7 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
 
 ``` r
 n=40
-nb_epochs=5
+nb_epochs=10
 n_iter<-n*nb_epochs
 ```
 
@@ -614,15 +613,7 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
 
-#### Combining the two
-
-NB : I reduced the number of epoch in the previous chunk to made the
-graphs more readable. We will change it here
-:
-
-``` r
-nb_epochs=15
-```
+##### Combining the two
 
 ``` r
 l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
@@ -641,7 +632,7 @@ l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
 plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
 ```
 
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
 
 Clean model for training :
 
@@ -678,7 +669,7 @@ history <- model %>% fit_generator(
     epochs = nb_epochs,
     callbacks = callback_list, #callback to update cylic lr
     validation_data = validation_generator,
-    validation_step=20
+    validation_step=50
 )
 ```
 
@@ -702,7 +693,7 @@ Based on the previous graph, I used a learning rate of 1e-3. The article
 [The 1cycle policy](https://sgugger.github.io/the-1cycle-policy.html),
 mentionned that we can use a bigger learning rate as a regularizer, but
 a maximum learning rate of 5e-3 gave average results in my my previous
-attempt (NB : **for an image size of 224**) :
+attempt :
 
 ![Val loss and Train loss for a maximum learning rate of
 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
