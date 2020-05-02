@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 137 94.9 79 68.6 151.9 ...
-    ##  $ : num [1:32, 1:4] 0 0 0 0 1 1 0 1 0 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 89.2 79 80.2 64.1 75 ...
+    ##  $ : num [1:32, 1:4] 0 1 1 0 0 1 0 0 1 0 ...
 
 # Import pre-trained model
 
@@ -470,12 +470,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-    ## 1  1.145048e-08 0.9529219
-    ## 2  1.311134e-08 1.0468488
-    ## 3  1.501311e-08 1.0288451
-    ## 4  1.719072e-08 0.8923152
-    ## 5  1.968419e-08 1.2429831
-    ## 6  2.253934e-08 1.0531113
+    ## 1  1.145048e-08 0.9743919
+    ## 2  1.311134e-08 1.2076546
+    ## 3  1.501311e-08 1.0008450
+    ## 4  1.719072e-08 1.1876563
+    ## 5  1.968419e-08 0.9926370
+    ## 6  2.253934e-08 1.1646078
 
 Learning rate vs loss
 :
@@ -663,14 +663,14 @@ The following code [came from the tutorial of Keras here,
 checkpoint_dir <- "checkpoints"
 unlink(checkpoint_dir, recursive = TRUE)
 dir.create(checkpoint_dir)
-filepath <- file.path(checkpoint_dir, "weights.{epoch:02d}-{val_loss:.2f}.hdf5")
+filepath <- file.path(checkpoint_dir, "weights.{epoch:02d}.hdf5")
 ```
 
 ``` r
 check_point_callback <- callback_model_checkpoint(
   filepath = filepath,
   save_weights_only = TRUE,
-  save_best_only = TRUE,
+  save_best_only = FALSE,
   verbose = 1
 )
 ```
@@ -710,8 +710,15 @@ Load best model :
 list.files(checkpoint_dir)
 ```
 
-    ## [1] "weights.01-0.72.hdf5" "weights.02-0.58.hdf5" "weights.03-0.56.hdf5"
-    ## [4] "weights.04-0.52.hdf5" "weights.06-0.52.hdf5"
+    ##  [1] "weights.01.hdf5" "weights.02.hdf5" "weights.03.hdf5" "weights.04.hdf5"
+    ##  [5] "weights.05.hdf5" "weights.06.hdf5" "weights.07.hdf5" "weights.08.hdf5"
+    ##  [9] "weights.09.hdf5" "weights.10.hdf5"
+
+``` r
+model %>% load_model_weights_hdf5(
+  file.path(checkpoint_dir,"weights.06.hdf5")
+)
+```
 
 ### About the learning rate
 
@@ -811,12 +818,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-    ## 1  1.145048e-08 0.9529219
-    ## 2  1.311134e-08 1.0468488
-    ## 3  1.501311e-08 1.0288451
-    ## 4  1.719072e-08 0.8923152
-    ## 5  1.968419e-08 1.2429831
-    ## 6  2.253934e-08 1.0531113
+    ## 1  1.145048e-08 0.9743919
+    ## 2  1.311134e-08 1.2076546
+    ## 3  1.501311e-08 1.0008450
+    ## 4  1.719072e-08 1.1876563
+    ## 5  1.968419e-08 0.9926370
+    ## 6  2.253934e-08 1.1646078
 
 Learning rate vs loss
 :
@@ -827,7 +834,7 @@ ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  g
 
     ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
 
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
 
 ### Training
 
@@ -854,7 +861,7 @@ l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
 plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
 ```
 
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
 
 ``` r
 model %>% compile(
