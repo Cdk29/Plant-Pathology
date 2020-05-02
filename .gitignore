@@ -1,9 +1,8 @@
 plant-pathology-2020-fgvc7/*
 plant-pathology-2020-fgvc7.zip
 resnet50-lr-finder-and-cyclic-lr-with-r.ipynb
-<<<<<<< HEAD
 .Rhistory
 raw_model.h5
 fine_tuned_model.h5
-=======
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
+checkpoints/*
+*.h5

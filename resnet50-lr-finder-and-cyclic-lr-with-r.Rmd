@@ -452,28 +452,45 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
-<<<<<<< HEAD
-=======
-#### Better metric
 
-Addition of the metric categorical_accuracy to be sure of the accuracy plotted.
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
+#### Saving all models
+
 
 ```{r}
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
     loss="binary_crossentropy",
-<<<<<<< HEAD
-=======
-    #metrics = c("categorical_accuracy")
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
     metrics = "accuracy"
 )
 ```
 
+
+The following code [came from the tutorial of Keras here, "tutorial_save_and_restore"](https://keras.rstudio.com/articles/tutorial_save_and_restore.html).
+
+
+```{r}
+checkpoint_dir <- "checkpoints"
+unlink(checkpoint_dir, recursive = TRUE)
+dir.create(checkpoint_dir)
+filepath <- file.path(checkpoint_dir, "weights.{epoch:02d}-{val_loss:.2f}.hdf5")
+
+```
+
+
+```{r}
+check_point_callback <- callback_model_checkpoint(
+  filepath = filepath,
+  save_weights_only = TRUE,
+  save_best_only = TRUE,
+  verbose = 1
+)
+
+```
+
+
 ```{r}
 callback_list<-list(callback_lr, #callback to update lr
-    callback_model_checkpoint(filepath = "raw_model.h5", monitor = "val_acc", save_best_only = TRUE))
+                    check_point_callback) #callback to save model
 ```
 
 ```{r}
@@ -487,6 +504,7 @@ history <- model %>% fit_generator(
 )
 ```
 
+
 ```{r plot_perforance}
 plot(history)
 ```
@@ -495,6 +513,7 @@ Load best model :
 
 ```{r}
 #model<-load_model_hdf5("raw_model.h5")
+list.files(checkpoint_dir)
 ```
 
 ### About the learning rate 
@@ -524,7 +543,8 @@ summary(model)
 ```
 
 
-#### Learning rate finder for unfreezed model
+### Learning rate finder for unfreezed model
+
 
 ```{r}
 callback_list = list(callback_lr, callback_logger, callback_log_acc_lr)
@@ -576,8 +596,7 @@ Learning rate vs loss :
 ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  geom_smooth(span = 0.5)
 ```
 
-<<<<<<< HEAD
-#### Fine tuning of the model
+### Training
 
 
 ```{r}
@@ -636,22 +655,6 @@ plot(history)
 ```
 
 
-
-
-
-
-
-=======
-More centered on the moment when the slope goes down :
-
-```{r}
-limits<-quantile(data$Loss, probs = c(0.10, 0.90))
-ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + 
-scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span = 0.5)
-```
-
-#### Fine tuning of the model
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 
 # Submit
 

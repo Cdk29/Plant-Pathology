@@ -287,13 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-<<<<<<< HEAD
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 91.6 166.8 78 66.3 183 ...
-    ##  $ : num [1:32, 1:4] 0 1 0 1 1 0 1 1 0 0 ...
-=======
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 129.4 141.6 254 94.8 70.4 ...
-    ##  $ : num [1:32, 1:4] 1 1 0 0 0 1 0 0 1 0 ...
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 137 94.9 79 68.6 151.9 ...
+    ##  $ : num [1:32, 1:4] 0 0 0 0 1 1 0 1 0 0 ...
 
 # Import pre-trained model
 
@@ -475,21 +470,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-<<<<<<< HEAD
-    ## 1  1.145048e-08 1.0814290
-    ## 2  1.311134e-08 1.2165661
-    ## 3  1.501311e-08 1.0346155
-    ## 4  1.719072e-08 1.0561068
-    ## 5  1.968419e-08 1.1090004
-    ## 6  2.253934e-08 0.9447393
-=======
-    ## 1  1.145048e-08 1.1035540
-    ## 2  1.311134e-08 1.0811859
-    ## 3  1.501311e-08 0.8902329
-    ## 4  1.719072e-08 0.9373264
-    ## 5  1.968419e-08 1.0631230
-    ## 6  2.253934e-08 0.9979775
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
+    ## 1  1.145048e-08 0.9529219
+    ## 2  1.311134e-08 1.0468488
+    ## 3  1.501311e-08 1.0288451
+    ## 4  1.719072e-08 0.8923152
+    ## 5  1.968419e-08 1.2429831
+    ## 6  2.253934e-08 1.0531113
 
 Learning rate vs loss
 :
@@ -660,34 +646,43 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
-<<<<<<< HEAD
-=======
-#### Better metric
+#### Saving all models
 
-Addition of the metric categorical\_accuracy to be sure of the accuracy
-plotted.
-
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 ``` r
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
     loss="binary_crossentropy",
-<<<<<<< HEAD
-=======
-    #metrics = c("categorical_accuracy")
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
     metrics = "accuracy"
 )
 ```
 
+The following code [came from the tutorial of Keras here,
+“tutorial\_save\_and\_restore”](https://keras.rstudio.com/articles/tutorial_save_and_restore.html).
+
 ``` r
-callback_list<-list(callback_lr, #callback to update lr
-    callback_model_checkpoint(filepath = "raw_model.h5", monitor = "val_acc", save_best_only = TRUE))
+checkpoint_dir <- "checkpoints"
+unlink(checkpoint_dir, recursive = TRUE)
+dir.create(checkpoint_dir)
+filepath <- file.path(checkpoint_dir, "weights.{epoch:02d}-{val_loss:.2f}.hdf5")
 ```
 
-    ## Warning in callback_model_checkpoint(filepath = "raw_model.h5", monitor =
-    ## "val_acc", : The save_freq argument is only used by TensorFlow >= 1.14. Update
+``` r
+check_point_callback <- callback_model_checkpoint(
+  filepath = filepath,
+  save_weights_only = TRUE,
+  save_best_only = TRUE,
+  verbose = 1
+)
+```
+
+    ## Warning in callback_model_checkpoint(filepath = filepath, save_weights_only
+    ## = TRUE, : The save_freq argument is only used by TensorFlow >= 1.14. Update
     ## TensorFlow or use save_freq = NULL
+
+``` r
+callback_list<-list(callback_lr, #callback to update lr
+                    check_point_callback) #callback to save model
+```
 
 ``` r
 history <- model %>% fit_generator(
@@ -712,7 +707,11 @@ Load best model :
 
 ``` r
 #model<-load_model_hdf5("raw_model.h5")
+list.files(checkpoint_dir)
 ```
+
+    ## [1] "weights.01-0.72.hdf5" "weights.02-0.58.hdf5" "weights.03-0.56.hdf5"
+    ## [4] "weights.04-0.52.hdf5" "weights.06-0.52.hdf5"
 
 ### About the learning rate
 
@@ -767,7 +766,7 @@ summary(model)
     ## Non-trainable params: 8,615,808
     ## ________________________________________________________________________________
 
-#### Learning rate finder for unfreezed model
+### Learning rate finder for unfreezed model
 
 ``` r
 callback_list = list(callback_lr, callback_logger, callback_log_acc_lr)
@@ -812,21 +811,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-<<<<<<< HEAD
-    ## 1  1.145048e-08 1.0814290
-    ## 2  1.311134e-08 1.2165661
-    ## 3  1.501311e-08 1.0346155
-    ## 4  1.719072e-08 1.0561068
-    ## 5  1.968419e-08 1.1090004
-    ## 6  2.253934e-08 0.9447393
-=======
-    ## 1  1.145048e-08 1.1035540
-    ## 2  1.311134e-08 1.0811859
-    ## 3  1.501311e-08 0.8902329
-    ## 4  1.719072e-08 0.9373264
-    ## 5  1.968419e-08 1.0631230
-    ## 6  2.253934e-08 0.9979775
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
+    ## 1  1.145048e-08 0.9529219
+    ## 2  1.311134e-08 1.0468488
+    ## 3  1.501311e-08 1.0288451
+    ## 4  1.719072e-08 0.8923152
+    ## 5  1.968419e-08 1.2429831
+    ## 6  2.253934e-08 1.0531113
 
 Learning rate vs loss
 :
@@ -837,10 +827,9 @@ ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  g
 
     ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
 
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->
 
-<<<<<<< HEAD
-#### Fine tuning of the model
+### Training
 
 ``` r
 n=40
@@ -865,7 +854,7 @@ l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
 plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
 ```
 
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
 
 ``` r
 model %>% compile(
@@ -902,25 +891,6 @@ plot(history)
     ## `geom_smooth()` using formula 'y ~ x'
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned-1.png)<!-- -->
-=======
-More centered on the moment when the slope goes down :
-
-``` r
-limits<-quantile(data$Loss, probs = c(0.10, 0.90))
-ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + 
-scale_y_continuous(name="Loss", limits=limits)+ geom_point() +  geom_smooth(span = 0.5)
-```
-
-    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
-
-    ## Warning: Removed 48 rows containing non-finite values (stat_smooth).
-
-    ## Warning: Removed 48 rows containing missing values (geom_point).
-
-![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
-
-#### Fine tuning of the model
->>>>>>> 0e95cb93c660531961cd85d6c13395e023450ffc
 
 # Submit
 
