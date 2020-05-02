@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 89.2 79 80.2 64.1 75 ...
-    ##  $ : num [1:32, 1:4] 0 1 1 0 0 1 0 0 1 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 166 252 151 251 77 ...
+    ##  $ : num [1:32, 1:4] 0 1 0 1 0 1 0 1 0 0 ...
 
 # Import pre-trained model
 
@@ -469,13 +469,13 @@ data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
 head(data)
 ```
 
-    ##   Learning_rate      Loss
-    ## 1  1.145048e-08 0.9743919
-    ## 2  1.311134e-08 1.2076546
-    ## 3  1.501311e-08 1.0008450
-    ## 4  1.719072e-08 1.1876563
-    ## 5  1.968419e-08 0.9926370
-    ## 6  2.253934e-08 1.1646078
+    ##   Learning_rate     Loss
+    ## 1  1.145048e-08 1.096695
+    ## 2  1.311134e-08 1.165954
+    ## 3  1.501311e-08 1.036784
+    ## 4  1.719072e-08 1.116353
+    ## 5  1.968419e-08 1.064520
+    ## 6  2.253934e-08 1.154365
 
 Learning rate vs loss
 :
@@ -716,7 +716,7 @@ list.files(checkpoint_dir)
 
 ``` r
 model %>% load_model_weights_hdf5(
-  file.path(checkpoint_dir,"weights.06.hdf5")
+  file.path(checkpoint_dir,"weights.04.hdf5")
 )
 ```
 
@@ -817,13 +817,13 @@ data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
 head(data)
 ```
 
-    ##   Learning_rate      Loss
-    ## 1  1.145048e-08 0.9743919
-    ## 2  1.311134e-08 1.2076546
-    ## 3  1.501311e-08 1.0008450
-    ## 4  1.719072e-08 1.1876563
-    ## 5  1.968419e-08 0.9926370
-    ## 6  2.253934e-08 1.1646078
+    ##   Learning_rate     Loss
+    ## 1  1.145048e-08 1.096695
+    ## 2  1.311134e-08 1.165954
+    ## 3  1.501311e-08 1.036784
+    ## 4  1.719072e-08 1.116353
+    ## 5  1.968419e-08 1.064520
+    ## 6  2.253934e-08 1.154365
 
 Learning rate vs loss
 :
@@ -840,7 +840,7 @@ ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  g
 
 ``` r
 n=40
-nb_epochs=10
+nb_epochs=15
 n_iter<-n*nb_epochs
 ```
 

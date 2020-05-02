@@ -518,7 +518,7 @@ list.files(checkpoint_dir)
 
 ```{r}
 model %>% load_model_weights_hdf5(
-  file.path(checkpoint_dir,"weights.06.hdf5")
+  file.path(checkpoint_dir,"weights.04.hdf5")
 )
 ```
 
@@ -607,7 +607,7 @@ ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  g
 
 ```{r}
 n=40
-nb_epochs=10
+nb_epochs=15
 n_iter<-n*nb_epochs
 ```
 
