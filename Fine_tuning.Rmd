@@ -1,0 +1,57 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# More fine tuning
+
+
+# Submit
+
+```{r}
+#test<-read_csv('/kaggle/input/plant-pathology-2020-fgvc7//test.csv')
+#test$image_id <- paste0(test$image_id, ".jpg")
+#head(test)
+```
+
+```{r}
+# test_generator <- flow_images_from_dataframe(dataframe = train_labels, 
+#                                               directory = image_path,
+#                                               class_mode = "other",
+#                                               x_col = "image_id",
+#                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
+#                                               target_size = c(224, 224),
+#                                               batch_size=1)
+```
+
+```{r}
+#num_test_images<-1821
+```
+
+```{r}
+#pred <- model %>% predict_generator(test_generator, steps=num_test_images)
+```
+
+```{r}
+#head(pred)
+```
+
+```{r}
+#sample_submission<-read.csv("/kaggle/input/plant-pathology-2020-fgvc7//sample_submission.csv")
+```
+
+```{r}
+# pred<-as.data.frame(cbind("id", pred))
+# colnames(pred)<-colnames(sample_submission)
+# head(pred)
+```
+
+```{r}
+# pred[,1]<-gsub(".jpg","",test$image_id)
+# head(pred)
+```
+
+```{r}
+# write.csv(pred, file='submission.csv', row.names=FALSE, quote=FALSE)
+```
+

@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 166 252 151 251 77 ...
-    ##  $ : num [1:32, 1:4] 0 1 0 1 0 1 0 1 0 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 255 59.7 185 89.4 51.8 ...
+    ##  $ : num [1:32, 1:4] 0 0 0 0 0 1 0 0 0 1 ...
 
 # Import pre-trained model
 
@@ -469,13 +469,13 @@ data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
 head(data)
 ```
 
-    ##   Learning_rate     Loss
-    ## 1  1.145048e-08 1.096695
-    ## 2  1.311134e-08 1.165954
-    ## 3  1.501311e-08 1.036784
-    ## 4  1.719072e-08 1.116353
-    ## 5  1.968419e-08 1.064520
-    ## 6  2.253934e-08 1.154365
+    ##   Learning_rate      Loss
+    ## 1  1.145048e-08 1.0522274
+    ## 2  1.311134e-08 0.8919097
+    ## 3  1.501311e-08 1.0668702
+    ## 4  1.719072e-08 0.9105158
+    ## 5  1.968419e-08 0.9442893
+    ## 6  2.253934e-08 1.0720690
 
 Learning rate vs loss
 :
@@ -703,7 +703,7 @@ plot(history)
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance-1.png)<!-- -->
 
-Load best model :
+### Loading best model
 
 ``` r
 #model<-load_model_hdf5("raw_model.h5")
@@ -716,7 +716,7 @@ list.files(checkpoint_dir)
 
 ``` r
 model %>% load_model_weights_hdf5(
-  file.path(checkpoint_dir,"weights.04.hdf5")
+  file.path(checkpoint_dir,"weights.05.hdf5")
 )
 ```
 
@@ -808,7 +808,7 @@ history <- model_lr_finder %>% fit_generator(
     epochs = 1,
     callbacks = callback_list,
     validation_data = validation_generator,
-    validation_step=30
+    validation_step=50
 )
 ```
 
@@ -817,13 +817,13 @@ data <- data.frame("Learning_rate" = lr_hist, "Loss" = callback_log_acc_lr$loss)
 head(data)
 ```
 
-    ##   Learning_rate     Loss
-    ## 1  1.145048e-08 1.096695
-    ## 2  1.311134e-08 1.165954
-    ## 3  1.501311e-08 1.036784
-    ## 4  1.719072e-08 1.116353
-    ## 5  1.968419e-08 1.064520
-    ## 6  2.253934e-08 1.154365
+    ##   Learning_rate      Loss
+    ## 1  1.145048e-08 1.0522274
+    ## 2  1.311134e-08 0.8919097
+    ## 3  1.501311e-08 1.0668702
+    ## 4  1.719072e-08 0.9105158
+    ## 5  1.968419e-08 0.9442893
+    ## 6  2.253934e-08 1.0720690
 
 Learning rate vs loss
 :
@@ -872,13 +872,25 @@ model %>% compile(
 ```
 
 ``` r
-callback_list<-list(callback_lr, #callback to update lr
-    callback_model_checkpoint(filepath = "fine_tuned_model.h5", monitor = "val_acc", save_best_only = TRUE))
+cp_callback <- callback_model_checkpoint(
+  filepath = filepath,
+  save_weights_only = FALSE,
+  verbose = 1
+)
 ```
 
-    ## Warning in callback_model_checkpoint(filepath = "fine_tuned_model.h5", monitor
-    ## = "val_acc", : The save_freq argument is only used by TensorFlow >= 1.14. Update
+    ## Warning in callback_model_checkpoint(filepath = filepath, save_weights_only
+    ## = FALSE, : The save_freq argument is only used by TensorFlow >= 1.14. Update
     ## TensorFlow or use save_freq = NULL
+
+``` r
+filepath <- file.path(checkpoint_dir, "Resnet_{epoch:02d}.hdf5")
+```
+
+``` r
+callback_list<-list(callback_lr, #callback to update lr
+                      cp_callback)
+```
 
 ``` r
 history <- model %>% fit_generator(
@@ -899,51 +911,11 @@ plot(history)
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned-1.png)<!-- -->
 
-# Submit
-
 ``` r
-#test<-read_csv('/kaggle/input/plant-pathology-2020-fgvc7//test.csv')
-#test$image_id <- paste0(test$image_id, ".jpg")
-#head(test)
+list.files("checkpoints/")
 ```
 
-``` r
-# test_generator <- flow_images_from_dataframe(dataframe = train_labels, 
-#                                               directory = image_path,
-#                                               class_mode = "other",
-#                                               x_col = "image_id",
-#                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-#                                               target_size = c(224, 224),
-#                                               batch_size=1)
-```
-
-``` r
-#num_test_images<-1821
-```
-
-``` r
-#pred <- model %>% predict_generator(test_generator, steps=num_test_images)
-```
-
-``` r
-#head(pred)
-```
-
-``` r
-#sample_submission<-read.csv("/kaggle/input/plant-pathology-2020-fgvc7//sample_submission.csv")
-```
-
-``` r
-# pred<-as.data.frame(cbind("id", pred))
-# colnames(pred)<-colnames(sample_submission)
-# head(pred)
-```
-
-``` r
-# pred[,1]<-gsub(".jpg","",test$image_id)
-# head(pred)
-```
-
-``` r
-# write.csv(pred, file='submission.csv', row.names=FALSE, quote=FALSE)
-```
+    ##  [1] "weights.01.hdf5" "weights.02.hdf5" "weights.03.hdf5" "weights.04.hdf5"
+    ##  [5] "weights.05.hdf5" "weights.06.hdf5" "weights.07.hdf5" "weights.08.hdf5"
+    ##  [9] "weights.09.hdf5" "weights.10.hdf5" "weights.11.hdf5" "weights.12.hdf5"
+    ## [13] "weights.13.hdf5" "weights.14.hdf5" "weights.15.hdf5"
