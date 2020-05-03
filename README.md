@@ -18,6 +18,7 @@ The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGV
 ### Performance of the pre-trained model with custom head : 
 
 ![Train and Val loss and accuracy](https://github.com/Cdk29/Plant-Pathology/blob/master/resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance-1.png)
-### Fine-tuning after unfreezing of the top layers :
 
-![Train and Val loss and accuracy fine tuned model](https://github.com/Cdk29/Plant-Pathology/blob/master/resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned-1.png)
+### Fine-tuning of the model generated at epoch 6 after unfreezing of the top layer :
+
+![Train and Val loss and accuracy fine tuned model](https://github.com/Cdk29/Plant-Pathology/blob/master/resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned_from_epoch_6-1.png)
