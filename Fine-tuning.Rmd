@@ -1,0 +1,380 @@
+---
+title: "Fine tuning of models"
+author: "Etienne Rolland"
+date: "03/05/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+# Fine tuning
+
+In this rmarkdown document I try some additionnal training of module produced by the others notebook. Most of the choise of architecture and parameters are wrotte in the other notebook. Most of the code is hidded because of its redundancy.
+
+
+```{r}
+use_python("/usr/bin/python3.5", required = TRUE)
+tf <- tensorflow::tf
+sess <- tf$Session()
+```
+
+# Data augmentation and train generator
+
+```{r}
+labels<-read_csv('plant-pathology-2020-fgvc7/train.csv')
+head(labels)
+```
+
+```{r}
+labels$image_id <- paste0(labels$image_id, ".jpg")
+```
+
+```{r}
+head(labels)
+```
+
+```{r}
+set.seed(6)
+```
+
+```{r}
+labels <- labels  %>% mutate(id = row_number())#Check IDs
+
+train_labels <- labels  %>% sample_frac(.90)#Create test set
+val_labels <- anti_join(labels, train_labels, by = 'id')
+train_labels$id<-NULL
+val_labels$id<-NULL
+```
+
+```{r}
+head(train_labels)
+```
+
+```{r}
+head(val_labels)
+```
+
+```{r}
+summary(train_labels)
+```
+
+```{r}
+summary(val_labels)
+```
+
+```{r}
+image_path<-'plant-pathology-2020-fgvc7/images/'
+```
+
+```{r}
+#reticulate::virtualenv_install(packages="pandas") 
+```
+
+```{r}
+keras::use_implementation("keras")
+keras::use_backend("tensorflow")
+
+```
+
+```{r}
+reticulate::py_config()
+```
+
+```{r}
+#data augmentation
+datagen <- image_data_generator(
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2,
+  horizontal_flip = TRUE,
+  fill_mode = "nearest"
+)
+```
+
+Plotting to see if it works :
+
+```{r}
+img_path<-"plant-pathology-2020-fgvc7/images/Train_1000.jpg"
+
+img <- image_load(img_path, target_size = c(224, 224))
+img_array <- image_to_array(img)
+img_array <- array_reshape(img_array, c(1, 224, 224, 3))
+img_array<-img_array/255
+# Generated that will flow augmented images
+augmentation_generator <- flow_images_from_data(
+  img_array, 
+  generator = datagen, 
+  batch_size = 1 
+)
+op <- par(mfrow = c(2, 2), pty = "s", mar = c(1, 0, 1, 0))
+for (i in 1:4) {
+  batch <- generator_next(augmentation_generator)
+  plot(as.raster(batch[1,,,]))
+}
+par(op)
+```
+
+```{r}
+train_generator <- flow_images_from_dataframe(dataframe = train_labels, 
+                                              directory = image_path,
+                                              generator = datagen,
+                                              class_mode = "other",
+                                              x_col = "image_id",
+                                              y_col = c("healthy", "multiple_diseases", "rust", "scab"),
+                                              target_size = c(224, 224),
+                                              batch_size=32)
+```
+
+```{r}
+validation_generator <- flow_images_from_dataframe(dataframe = val_labels, 
+                                              directory = image_path,
+                                              class_mode = "other",
+                                              x_col = "image_id",
+                                              y_col = c("healthy", "multiple_diseases", "rust", "scab"),
+                                              target_size = c(224, 224),
+                                              batch_size=32)
+```
+
+```{r}
+train_generator
+```
+
+```{r}
+batch<-generator_next(train_generator)
+str(batch)
+```
+
+
+
+# Import pre-trained model
+
+Most of the details are described in the other Rmd document that produced this weights.
+
+```{r}
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+```
+
+
+```{r}
+model <- keras_model_sequential() %>% 
+        conv_base %>% 
+        layer_global_max_pooling_2d() %>% 
+        layer_batch_normalization() %>%
+        layer_dropout(rate=0.5) %>%
+        layer_dense(units=4, activation="sigmoid")
+```
+
+```{r}
+model
+```
+
+## Unfreezing the model 
+
+Following line to got the name of the layer we want to unfreeze (res5a_branch2a)
+
+```{r}
+model %>% load_model_weights_hdf5(
+  file.path(checkpoint_dir,"weights.08.hdf5")
+)
+```
+
+
+[See this link to see](https://keras.rstudio.com/reference/freeze_layers.html) that it works to unfreeze conv_base independently of the sequential model.
+
+```{r}
+unfreeze_weights(conv_base, from="res5a_branch2a")
+```
+
+```{r}
+summary(model)
+```
+
+
+# Creation of the callback for the training :
+
+```{r}
+LogMetrics <- R6::R6Class("LogMetrics",
+  inherit = KerasCallback,
+  public = list(
+    loss = NULL,
+    acc = NULL,
+    on_batch_end = function(batch, logs=list()) {
+      self$loss <- c(self$loss, logs[["loss"]])
+      self$acc <- c(self$acc, logs[["acc"]])
+    }
+))
+```
+
+```{r}
+callback_lr_init <- function(logs){
+      iter <<- 0
+      lr_hist <<- c()
+      iter_hist <<- c()
+}
+callback_lr_set <- function(batch, logs){
+      iter <<- iter + 1
+      LR <- l_rate[iter] # if number of iterations > l_rate values, make LR constant to last value
+      if(is.na(LR)) LR <- l_rate[length(l_rate)]
+      k_set_value(model$optimizer$lr, LR)
+}
+callback_lr_log <- function(batch, logs){
+      lr_hist <<- c(lr_hist, k_get_value(model$optimizer$lr))
+      iter_hist <<- c(iter_hist, k_get_value(model$optimizer$iterations))
+}
+```
+
+```{r}
+callback_lr <- callback_lambda(on_train_begin=callback_lr_init, on_batch_begin=callback_lr_set)
+callback_logger <- callback_lambda(on_batch_end=callback_lr_log)
+callback_log_acc_lr <- LogMetrics$new()
+```
+
+
+# Cyclical learning rate
+
+```{r}
+####################
+Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=2000, mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle'){ # translated from python to R, original at: https://github.com/bckenstler/CLR/blob/master/clr_callback.py # This callback implements a cyclical learning rate policy (CLR). # The method cycles the learning rate between two boundaries with # some constant frequency, as detailed in this paper (https://arxiv.org/abs/1506.01186). # The amplitude of the cycle can be scaled on a per-iteration or per-cycle basis. # This class has three built-in policies, as put forth in the paper. # - "triangular": A basic triangular cycle w/ no amplitude scaling. # - "triangular2": A basic triangular cycle that scales initial amplitude by half each cycle. # - "exp_range": A cycle that scales initial amplitude by gamma**(cycle iterations) at each cycle iteration. # - "sinus": A sinusoidal form cycle # # Example # > clr <- Cyclic_LR(base_lr=0.001, max_lr=0.006, step_size=2000, mode='triangular', num_iterations=20000) # > plot(clr, cex=0.2)
+ 
+      # Class also supports custom scaling functions with function output max value of 1:
+      # > clr_fn <- function(x) 1/x # > clr <- Cyclic_LR(base_lr=0.001, max_lr=0.006, step_size=400, # scale_fn=clr_fn, scale_mode='cycle', num_iterations=20000) # > plot(clr, cex=0.2)
+ 
+      # # Arguments
+      #   iteration:
+      #       if is a number:
+      #           id of the iteration where: max iteration = epochs * (samples/batch)
+      #       if "iteration" is a vector i.e.: iteration=1:10000:
+      #           returns the whole sequence of lr as a vector
+      #   base_lr: initial learning rate which is the
+      #       lower boundary in the cycle.
+      #   max_lr: upper boundary in the cycle. Functionally,
+      #       it defines the cycle amplitude (max_lr - base_lr).
+      #       The lr at any cycle is the sum of base_lr
+      #       and some scaling of the amplitude; therefore 
+      #       max_lr may not actually be reached depending on
+      #       scaling function.
+      #   step_size: number of training iterations per
+      #       half cycle. Authors suggest setting step_size
+      #       2-8 x training iterations in epoch.
+      #   mode: one of {triangular, triangular2, exp_range, sinus}.
+      #       Default 'triangular'.
+      #       Values correspond to policies detailed above.
+      #       If scale_fn is not None, this argument is ignored.
+      #   gamma: constant in 'exp_range' scaling function:
+      #       gamma**(cycle iterations)
+      #   scale_fn: Custom scaling policy defined by a single
+      #       argument lambda function, where 
+      #       0 <= scale_fn(x) <= 1 for all x >= 0.
+      #       mode paramater is ignored 
+      #   scale_mode: {'cycle', 'iterations'}.
+      #       Defines whether scale_fn is evaluated on 
+      #       cycle number or cycle iterations (training
+      #       iterations since start of cycle). Default is 'cycle'.
+ 
+      ########
+      if(is.null(scale_fn)==TRUE){
+            if(mode=='triangular'){scale_fn <- function(x) 1; scale_mode <- 'cycle';}
+            if(mode=='triangular2'){scale_fn <- function(x) 1/(2^(x-1)); scale_mode <- 'cycle';}
+            if(mode=='exp_range'){scale_fn <- function(x) gamma^(x); scale_mode <- 'iterations';}
+            if(mode=='sinus'){scale_fn <- function(x) 0.5*(1+sin(x*pi/2)); scale_mode <- 'cycle';}
+            if(mode=='halfcosine'){scale_fn <- function(x) 0.5*(1+cos(x*pi)^2); scale_mode <- 'cycle';}
+      }
+      lr <- list()
+      if(is.vector(iteration)==TRUE){
+            for(iter in iteration){
+                  cycle <- floor(1 + (iter / (2*step_size)))
+                  x2 <- abs(iter/step_size-2 * cycle+1)
+                  if(scale_mode=='cycle') x <- cycle
+                  if(scale_mode=='iterations') x <- iter
+                  lr[[iter]] <- base_lr + (max_lr-base_lr) * max(0,(1-x2)) * scale_fn(x)
+            }
+      }
+      lr <- do.call("rbind",lr)
+      return(as.vector(lr))
+}
+```
+
+The lr max is set as the one used to train the head of the model, divided by 10. Same for the base_lr.
+
+```{r echo=TRUE}
+n=40
+nb_epochs=10
+n_iter<-n*nb_epochs
+```
+
+
+```{r echo=TRUE}
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-6, max_lr=1e-4, step_size=floor(n/2),
+                        mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-6, max_lr=1e-4, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
+
+l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
+```
+
+```{r}
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+
+## Training
+
+```{r echo=TRUE}
+model %>% compile(
+    optimizer=optimizer_rmsprop(lr=1e-5),
+    loss="binary_crossentropy",
+    metrics = "accuracy"
+)
+```
+
+Save all the models :
+
+```{r echo=TRUE}
+checkpoint_dir <- "fine_tuned_models"
+unlink(checkpoint_dir, recursive = TRUE)
+dir.create(checkpoint_dir)
+
+```
+
+```{r echo=TRUE}
+filepath <- file.path(checkpoint_dir, "Fine_tuned_Resnet50_epoch_8_{epoch:02d}.hdf5")
+
+cp_callback <- callback_model_checkpoint(
+  filepath = filepath,
+  save_weights_only = FALSE,
+  verbose = 1
+)
+```
+
+```{r echo=TRUE}
+callback_list<-list(callback_lr, #callback to update lr
+                      cp_callback)
+```
+
+```{r}
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
+
+```{r history_model_epoch_8}
+plot(history)
+```
+
+
+
+
