@@ -1,6 +1,8 @@
 ---
 title: Plant Pathology 2020 - FGVC7 with R and Keras
-output: github_document
+output: 
+  github_document :
+    toc: true
 ---
 
 # Keras with R
@@ -12,14 +14,14 @@ But I am a R practitioner and I want to know a framework that I can use with R. 
 The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGVC7](https://www.kaggle.com/c/plant-pathology-2020-fgvc7). In this notebook I also reimplement a learning rate finder and the one cycle policy.
 
 ## To do list :
-* bigger images
+* bigger images : dropped, no significative improvement
 * load best model after training :heavy_check_mark:
 * lr finder :heavy_check_mark:
 * add data augmentation :heavy_check_mark:
 * plot the data augmentation :heavy_check_mark:
 * implement one cycle policy ? :heavy_check_mark:
-* visualization of what the convnets learn
-* fine tuning
+* visualization of what the convnets learn : other kernel
+* fine tuning : other kernel
 
 ```{r}
 library(tidyverse)
@@ -35,9 +37,7 @@ tf <- tensorflow::tf
 sess <- tf$Session()
 ```
 
-
-
-## Data augmentation and train generator
+# Data augmentation and train generator
 
 ```{r}
 labels<-read_csv('plant-pathology-2020-fgvc7/train.csv')
@@ -404,9 +404,7 @@ l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=flo
 plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
 ```
 
-#### Reproducing cosine annealing
-
-
+### Reproducing cosine annealing
 
 ```{r}
 l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
@@ -419,7 +417,7 @@ l_rate <- rep(l_rate[n:(n*2)], nb_epochs)
 plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
 ```
 
-##### Combining the two
+### Combining the two
 
 ```{r}
 l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
@@ -453,7 +451,7 @@ model <- keras_model_sequential() %>%
 ```
 
 
-#### Saving all models
+### Saving all models
 
 
 ```{r}
@@ -481,8 +479,7 @@ filepath <- file.path(checkpoint_dir, "weights.{epoch:02d}.hdf5")
 check_point_callback <- callback_model_checkpoint(
   filepath = filepath,
   save_weights_only = TRUE,
-  save_best_only = FALSE,
-  verbose = 1
+  save_best_only = FALSE
 )
 
 ```
@@ -509,7 +506,18 @@ history <- model %>% fit_generator(
 plot(history)
 ```
 
-### Loading best model
+
+### About the learning rate 
+
+Based on the previous graph, I used a learning rate of 1e-3. The article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), mentionned that we can use a bigger learning rate as a regularizer, but a maximum learning rate of 5e-3 gave average results in my my previous attempt :
+
+![Val loss and Train loss for a maximum learning rate of 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
+
+# Fine tuning
+
+## Loading best model
+
+Which model choose ? The one which have the lesser val loss. The goal is not to hurt the performance of the fine tuning with an overtrained network. Problem is that the random generation of batch is not always consistent from one run to the others, and the network converge quite fast, at an epoch which is hard to predict before running the network. The best training seems to occur between epoch 4, 5 or 6. One solution, not so elegant, is to fine tune the model from epoch 4, 5 and 6, and see who perform the best.
 
 ```{r}
 #model<-load_model_hdf5("raw_model.h5")
@@ -518,19 +526,11 @@ list.files(checkpoint_dir)
 
 ```{r}
 model %>% load_model_weights_hdf5(
-  file.path(checkpoint_dir,"weights.05.hdf5")
+  file.path(checkpoint_dir,"weights.04.hdf5")
 )
 ```
 
-### About the learning rate 
-
-Based on the previous graph, I used a learning rate of 1e-3. The article [The 1cycle policy]( https://sgugger.github.io/the-1cycle-policy.html), mentionned that we can use a bigger learning rate as a regularizer, but a maximum learning rate of 5e-3 gave average results in my my previous attempt :
-
-![Val loss and Train loss for a maximum learning rate of 5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
-
-## Fine tuning
-
-### Unfreezing the model 
+## Unfreezing the model 
 
 Following line to got the name of the layer we want to unfreeze (res5a_branch2a)
 
@@ -548,9 +548,7 @@ unfreeze_weights(conv_base, from="res5a_branch2a")
 summary(model)
 ```
 
-
-### Learning rate finder for unfreezed model
-
+## Learning rate finder for unfreezed model
 
 ```{r}
 callback_list = list(callback_lr, callback_logger, callback_log_acc_lr)
@@ -602,7 +600,7 @@ Learning rate vs loss :
 ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  geom_smooth(span = 0.5)
 ```
 
-### Training
+## Training
 
 
 ```{r}
@@ -641,12 +639,13 @@ model %>% compile(
 
 
 ```{r}
+filepath <- file.path(checkpoint_dir, "Resnet50_{epoch:02d}.hdf5")
+
 cp_callback <- callback_model_checkpoint(
   filepath = filepath,
   save_weights_only = FALSE,
   verbose = 1
 )
-filepath <- file.path(checkpoint_dir, "Resnet_{epoch:02d}.hdf5")
 ```
 
 
@@ -666,13 +665,142 @@ history <- model %>% fit_generator(
 )
 ```
 
-
 ```{r plot_perforance_fine_tuned}
+plot(history)
+```
+
+## Fine tuning for model from epoch 5 and 6
+
+### Epoch 5
+
+Code not shown.
+
+
+```{r}
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+
+model <- keras_model_sequential() %>% 
+        conv_base %>% 
+        layer_global_max_pooling_2d() %>% 
+        layer_batch_normalization() %>%
+        layer_dropout(rate=0.5) %>%
+        layer_dense(units=4, activation="sigmoid")
+
+```
+
+
+```{r}
+model %>% load_model_weights_hdf5(
+  file.path(checkpoint_dir,"weights.05.hdf5")
+)
+
+unfreeze_weights(conv_base, from="res5a_branch2a")
+```
+
+```{r}
+summary(model)
+```
+
+
+```{r include=FALSE}
+model %>% compile(
+    optimizer=optimizer_rmsprop(lr=1e-5),
+    loss="binary_crossentropy",
+    metrics = "accuracy"
+)
+
+
+filepath <- file.path(checkpoint_dir, "Resnet50_from_epoch_5_{epoch:02d}.hdf5")
+
+cp_callback <- callback_model_checkpoint(
+  filepath = filepath,
+  save_weights_only = FALSE,
+  verbose = 1
+)
+
+callback_list<-list(callback_lr, #callback to update lr
+                      cp_callback)
+```
+
+```{r include=FALSE}
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
+
+
+```{r plot_perforance_fine_tuned_from_epoch_5}
+plot(history)
+```
+
+### Epoch 6
+
+Code not shown.
+
+```{r}
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+
+model <- keras_model_sequential() %>% 
+        conv_base %>% 
+        layer_global_max_pooling_2d() %>% 
+        layer_batch_normalization() %>%
+        layer_dropout(rate=0.5) %>%
+        layer_dense(units=4, activation="sigmoid")
+
+```
+
+
+
+```{r}
+model %>% load_model_weights_hdf5(
+  file.path(checkpoint_dir,"weights.06.hdf5")
+)
+unfreeze_weights(conv_base, from="res5a_branch2a")
+```
+
+```{r include=FALSE}
+model %>% compile(
+    optimizer=optimizer_rmsprop(lr=1e-5),
+    loss="binary_crossentropy",
+    metrics = "accuracy"
+)
+
+
+filepath <- file.path(checkpoint_dir, "Resnet50_from_epoch_6_{epoch:02d}.hdf5")
+
+cp_callback <- callback_model_checkpoint(
+  filepath = filepath,
+  save_weights_only = FALSE,
+  verbose = 1
+)
+
+callback_list<-list(callback_lr, #callback to update lr
+                      cp_callback)
+
+```
+
+```{r include=FALSE}
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
+
+
+```{r plot_perforance_fine_tuned_from_epoch_6}
 plot(history)
 ```
 
 ```{r}
 list.files("checkpoints/")
 ```
-
 

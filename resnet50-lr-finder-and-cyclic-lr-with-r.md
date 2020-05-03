@@ -21,15 +21,15 @@ policy.
 
 ## To do list :
 
-  - bigger images
+  - bigger images : dropped, no significative improvement
   - load best model after training :heavy\_check\_mark:
   - lr finder :heavy\_check\_mark:
   - add data augmentation :heavy\_check\_mark:
   - plot the data augmentation :heavy\_check\_mark:
   - implement one cycle policy ? :heavy\_check\_mark:
-  - visualization of what the convnets learn
-  - fine
-    tuning
+  - visualization of what the convnets learn : other kernel
+  - fine tuning : other
+    kernel
 
 <!-- end list -->
 
@@ -60,7 +60,7 @@ tf <- tensorflow::tf
 sess <- tf$Session()
 ```
 
-## Data augmentation and train generator
+# Data augmentation and train generator
 
 ``` r
 labels<-read_csv('plant-pathology-2020-fgvc7/train.csv')
@@ -287,8 +287,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 255 59.7 185 89.4 51.8 ...
-    ##  $ : num [1:32, 1:4] 0 0 0 0 0 1 0 0 0 1 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 89.7 181.5 94.1 156.6 214.6 ...
+    ##  $ : num [1:32, 1:4] 0 0 0 0 0 0 1 1 1 1 ...
 
 # Import pre-trained model
 
@@ -470,12 +470,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-    ## 1  1.145048e-08 1.0522274
-    ## 2  1.311134e-08 0.8919097
-    ## 3  1.501311e-08 1.0668702
-    ## 4  1.719072e-08 0.9105158
-    ## 5  1.968419e-08 0.9442893
-    ## 6  2.253934e-08 1.0720690
+    ## 1  1.145048e-08 1.2444329
+    ## 2  1.311134e-08 1.0624706
+    ## 3  1.501311e-08 0.9174300
+    ## 4  1.719072e-08 1.1976832
+    ## 5  1.968419e-08 0.9984596
+    ## 6  2.253934e-08 1.0098392
 
 Learning rate vs loss
 :
@@ -599,7 +599,7 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
 
-#### Reproducing cosine annealing
+### Reproducing cosine annealing
 
 ``` r
 l_rate <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
@@ -614,7 +614,7 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
 
-##### Combining the two
+### Combining the two
 
 ``` r
 l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
@@ -646,7 +646,7 @@ model <- keras_model_sequential() %>%
         layer_dense(units=4, activation="sigmoid")
 ```
 
-#### Saving all models
+### Saving all models
 
 ``` r
 model %>% compile(
@@ -670,8 +670,7 @@ filepath <- file.path(checkpoint_dir, "weights.{epoch:02d}.hdf5")
 check_point_callback <- callback_model_checkpoint(
   filepath = filepath,
   save_weights_only = TRUE,
-  save_best_only = FALSE,
-  verbose = 1
+  save_best_only = FALSE
 )
 ```
 
@@ -703,7 +702,29 @@ plot(history)
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance-1.png)<!-- -->
 
-### Loading best model
+### About the learning rate
+
+Based on the previous graph, I used a learning rate of 1e-3. The article
+[The 1cycle policy](https://sgugger.github.io/the-1cycle-policy.html),
+mentionned that we can use a bigger learning rate as a regularizer, but
+a maximum learning rate of 5e-3 gave average results in my my previous
+attempt :
+
+![Val loss and Train loss for a maximum learning rate of
+5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
+
+# Fine tuning
+
+## Loading best model
+
+Which model choose ? The one which have the lesser val loss. The goal is
+not to hurt the performance of the fine tuning with an overtrained
+network. Problem is that the random generation of batch is not always
+consistent from one run to the others, and the network converge quite
+fast, at an epoch which is hard to predict before running the network.
+The best training seems to occur between epoch 4, 5 or 6. One solution,
+not so elegant, is to fine tune the model from epoch 4, 5 and 6, and see
+who perform the best.
 
 ``` r
 #model<-load_model_hdf5("raw_model.h5")
@@ -716,24 +737,11 @@ list.files(checkpoint_dir)
 
 ``` r
 model %>% load_model_weights_hdf5(
-  file.path(checkpoint_dir,"weights.05.hdf5")
+  file.path(checkpoint_dir,"weights.04.hdf5")
 )
 ```
 
-### About the learning rate
-
-Based on the previous graph, I used a learning rate of 1e-3. The article
-[The 1cycle policy](https://sgugger.github.io/the-1cycle-policy.html),
-mentionned that we can use a bigger learning rate as a regularizer, but
-a maximum learning rate of 5e-3 gave average results in my my previous
-attempt :
-
-![Val loss and Train loss for a maximum learning rate of
-5e-3](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/maxlr5e3.png)
-
-## Fine tuning
-
-### Unfreezing the model
+## Unfreezing the model
 
 Following line to got the name of the layer we want to unfreeze
 (res5a\_branch2a)
@@ -773,7 +781,7 @@ summary(model)
     ## Non-trainable params: 8,615,808
     ## ________________________________________________________________________________
 
-### Learning rate finder for unfreezed model
+## Learning rate finder for unfreezed model
 
 ``` r
 callback_list = list(callback_lr, callback_logger, callback_log_acc_lr)
@@ -818,12 +826,12 @@ head(data)
 ```
 
     ##   Learning_rate      Loss
-    ## 1  1.145048e-08 1.0522274
-    ## 2  1.311134e-08 0.8919097
-    ## 3  1.501311e-08 1.0668702
-    ## 4  1.719072e-08 0.9105158
-    ## 5  1.968419e-08 0.9442893
-    ## 6  2.253934e-08 1.0720690
+    ## 1  1.145048e-08 1.2444329
+    ## 2  1.311134e-08 1.0624706
+    ## 3  1.501311e-08 0.9174300
+    ## 4  1.719072e-08 1.1976832
+    ## 5  1.968419e-08 0.9984596
+    ## 6  2.253934e-08 1.0098392
 
 Learning rate vs loss
 :
@@ -836,7 +844,7 @@ ggplot(data, aes(x=Learning_rate, y=Loss)) + scale_x_log10() + geom_point() +  g
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
 
-### Training
+## Training
 
 ``` r
 n=40
@@ -872,6 +880,8 @@ model %>% compile(
 ```
 
 ``` r
+filepath <- file.path(checkpoint_dir, "Resnet50_{epoch:02d}.hdf5")
+
 cp_callback <- callback_model_checkpoint(
   filepath = filepath,
   save_weights_only = FALSE,
@@ -882,10 +892,6 @@ cp_callback <- callback_model_checkpoint(
     ## Warning in callback_model_checkpoint(filepath = filepath, save_weights_only
     ## = FALSE, : The save_freq argument is only used by TensorFlow >= 1.14. Update
     ## TensorFlow or use save_freq = NULL
-
-``` r
-filepath <- file.path(checkpoint_dir, "Resnet_{epoch:02d}.hdf5")
-```
 
 ``` r
 callback_list<-list(callback_lr, #callback to update lr
@@ -911,11 +917,122 @@ plot(history)
 
 ![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned-1.png)<!-- -->
 
+## Fine tuning for model from epoch 5 and 6
+
+### Epoch 5
+
+Code not
+shown.
+
+``` r
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+
+model <- keras_model_sequential() %>% 
+        conv_base %>% 
+        layer_global_max_pooling_2d() %>% 
+        layer_batch_normalization() %>%
+        layer_dropout(rate=0.5) %>%
+        layer_dense(units=4, activation="sigmoid")
+```
+
+``` r
+model %>% load_model_weights_hdf5(
+  file.path(checkpoint_dir,"weights.05.hdf5")
+)
+
+unfreeze_weights(conv_base, from="res5a_branch2a")
+```
+
+``` r
+summary(model)
+```
+
+    ## ________________________________________________________________________________
+    ## Layer (type)                        Output Shape                    Param #     
+    ## ================================================================================
+    ## resnet50 (Model)                    (None, 7, 7, 2048)              23587712    
+    ## ________________________________________________________________________________
+    ## global_max_pooling2d_3 (GlobalMaxPo (None, 2048)                    0           
+    ## ________________________________________________________________________________
+    ## batch_normalization_3 (BatchNormali (None, 2048)                    8192        
+    ## ________________________________________________________________________________
+    ## dropout_3 (Dropout)                 (None, 2048)                    0           
+    ## ________________________________________________________________________________
+    ## dense_3 (Dense)                     (None, 4)                       8196        
+    ## ================================================================================
+    ## Total params: 23,604,100
+    ## Trainable params: 14,988,292
+    ## Non-trainable params: 8,615,808
+    ## ________________________________________________________________________________
+
+``` r
+plot(history)
+```
+
+    ## `geom_smooth()` using formula 'y ~ x'
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned_from_epoch_5-1.png)<!-- -->
+
+### Epoch 6
+
+Code not
+shown.
+
+``` r
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+
+model <- keras_model_sequential() %>% 
+        conv_base %>% 
+        layer_global_max_pooling_2d() %>% 
+        layer_batch_normalization() %>%
+        layer_dropout(rate=0.5) %>%
+        layer_dense(units=4, activation="sigmoid")
+```
+
+``` r
+model %>% load_model_weights_hdf5(
+  file.path(checkpoint_dir,"weights.06.hdf5")
+)
+unfreeze_weights(conv_base, from="res5a_branch2a")
+```
+
+``` r
+plot(history)
+```
+
+    ## `geom_smooth()` using formula 'y ~ x'
+
+![](resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned_from_epoch_6-1.png)<!-- -->
+
 ``` r
 list.files("checkpoints/")
 ```
 
-    ##  [1] "weights.01.hdf5" "weights.02.hdf5" "weights.03.hdf5" "weights.04.hdf5"
-    ##  [5] "weights.05.hdf5" "weights.06.hdf5" "weights.07.hdf5" "weights.08.hdf5"
-    ##  [9] "weights.09.hdf5" "weights.10.hdf5" "weights.11.hdf5" "weights.12.hdf5"
-    ## [13] "weights.13.hdf5" "weights.14.hdf5" "weights.15.hdf5"
+    ##  [1] "Resnet50_01.hdf5"              "Resnet50_02.hdf5"             
+    ##  [3] "Resnet50_03.hdf5"              "Resnet50_04.hdf5"             
+    ##  [5] "Resnet50_05.hdf5"              "Resnet50_06.hdf5"             
+    ##  [7] "Resnet50_07.hdf5"              "Resnet50_08.hdf5"             
+    ##  [9] "Resnet50_09.hdf5"              "Resnet50_10.hdf5"             
+    ## [11] "Resnet50_11.hdf5"              "Resnet50_12.hdf5"             
+    ## [13] "Resnet50_13.hdf5"              "Resnet50_14.hdf5"             
+    ## [15] "Resnet50_15.hdf5"              "Resnet50_from_epoch_5_01.hdf5"
+    ## [17] "Resnet50_from_epoch_5_02.hdf5" "Resnet50_from_epoch_5_03.hdf5"
+    ## [19] "Resnet50_from_epoch_5_04.hdf5" "Resnet50_from_epoch_5_05.hdf5"
+    ## [21] "Resnet50_from_epoch_5_06.hdf5" "Resnet50_from_epoch_5_07.hdf5"
+    ## [23] "Resnet50_from_epoch_5_08.hdf5" "Resnet50_from_epoch_5_09.hdf5"
+    ## [25] "Resnet50_from_epoch_5_10.hdf5" "Resnet50_from_epoch_5_11.hdf5"
+    ## [27] "Resnet50_from_epoch_5_12.hdf5" "Resnet50_from_epoch_5_13.hdf5"
+    ## [29] "Resnet50_from_epoch_5_14.hdf5" "Resnet50_from_epoch_5_15.hdf5"
+    ## [31] "Resnet50_from_epoch_6_01.hdf5" "Resnet50_from_epoch_6_02.hdf5"
+    ## [33] "Resnet50_from_epoch_6_03.hdf5" "Resnet50_from_epoch_6_04.hdf5"
+    ## [35] "Resnet50_from_epoch_6_05.hdf5" "Resnet50_from_epoch_6_06.hdf5"
+    ## [37] "Resnet50_from_epoch_6_07.hdf5" "Resnet50_from_epoch_6_08.hdf5"
+    ## [39] "Resnet50_from_epoch_6_09.hdf5" "Resnet50_from_epoch_6_10.hdf5"
+    ## [41] "Resnet50_from_epoch_6_11.hdf5" "Resnet50_from_epoch_6_12.hdf5"
+    ## [43] "Resnet50_from_epoch_6_13.hdf5" "Resnet50_from_epoch_6_14.hdf5"
+    ## [45] "Resnet50_from_epoch_6_15.hdf5" "weights.01.hdf5"              
+    ## [47] "weights.02.hdf5"               "weights.03.hdf5"              
+    ## [49] "weights.04.hdf5"               "weights.05.hdf5"              
+    ## [51] "weights.06.hdf5"               "weights.07.hdf5"              
+    ## [53] "weights.08.hdf5"               "weights.09.hdf5"              
+    ## [55] "weights.10.hdf5"
