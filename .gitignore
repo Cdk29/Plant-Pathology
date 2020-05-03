@@ -6,3 +6,4 @@ raw_model.h5
 fine_tuned_model.h5
 checkpoints/*
 *.h5
+fine_tuned_models/*

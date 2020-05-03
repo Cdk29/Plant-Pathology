@@ -9,10 +9,16 @@ output: github_document
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-
 # Fine tuning
 
 In this rmarkdown document I try some additionnal training of module produced by the others notebook. Most of the choise of architecture and parameters are wrotte in the other notebook. Most of the code is hidded because of its redundancy.
+
+```{r}
+library(tidyverse)
+library(keras)
+library(tensorflow)
+library(reticulate)
+```
 
 
 ```{r}
@@ -43,7 +49,7 @@ set.seed(6)
 ```{r}
 labels <- labels  %>% mutate(id = row_number())#Check IDs
 
-train_labels <- labels  %>% sample_frac(.90)#Create test set
+train_labels <- labels  %>% sample_frac(.80)#Create test set
 val_labels <- anti_join(labels, train_labels, by = 'id')
 train_labels$id<-NULL
 val_labels$id<-NULL
@@ -151,7 +157,7 @@ str(batch)
 
 
 
-# Import pre-trained model
+# Impot pre-trained model
 
 Most of the details are described in the other Rmd document that produced this weights.
 
@@ -178,6 +184,8 @@ model
 Following line to got the name of the layer we want to unfreeze (res5a_branch2a)
 
 ```{r}
+checkpoint_dir <- "checkpoints"
+
 model %>% load_model_weights_hdf5(
   file.path(checkpoint_dir,"weights.08.hdf5")
 )
@@ -232,6 +240,7 @@ callback_lr_log <- function(batch, logs){
 callback_lr <- callback_lambda(on_train_begin=callback_lr_init, on_batch_begin=callback_lr_set)
 callback_logger <- callback_lambda(on_batch_end=callback_lr_log)
 callback_log_acc_lr <- LogMetrics$new()
+
 ```
 
 
@@ -326,7 +335,7 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 ```
 
 
-## Training
+# Training
 
 ```{r echo=TRUE}
 model %>% compile(
@@ -375,6 +384,47 @@ history <- model %>% fit_generator(
 plot(history)
 ```
 
+### Model from epoch 6, after some fine tuning :
+
+```{r echo=TRUE}
+model<-load_model_hdf5("checkpoints/Resnet50_from_epoch_6_02.hdf5")
+```
+
+```{r echo=TRUE}
+model %>% compile(
+    optimizer=optimizer_rmsprop(lr=1e-5),
+    loss="binary_crossentropy",
+    metrics = "accuracy"
+)
+```
+
+```{r echo=TRUE}
+filepath <- file.path(checkpoint_dir, "Fine_tuned_Resnet50_epoch_6_{epoch:02d}.hdf5")
+
+cp_callback <- callback_model_checkpoint(
+  filepath = filepath,
+  save_weights_only = FALSE,
+  verbose = 1
+)
+```
+
+```{r echo=TRUE}
+callback_list<-list(callback_lr, #callback to update lr
+                      cp_callback)
+```
 
 
+```{r}
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
 
+```{r history_model_epoch_6}
+plot(history)
+```
