@@ -133,7 +133,7 @@ train_generator <- flow_images_from_dataframe(dataframe = train_labels,
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
                                               target_size = c(224, 224),
-                                              batch_size=32)
+                                              batch_size=16)
 ```
 
 ```{r}
@@ -143,7 +143,7 @@ validation_generator <- flow_images_from_dataframe(dataframe = val_labels,
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
                                               target_size = c(224, 224),
-                                              batch_size=32)
+                                              batch_size=16)
 ```
 
 ```{r}
@@ -163,6 +163,9 @@ Most of the details are described in the other Rmd document that produced this w
 
 ```{r}
 conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+```
+```{r}
+summary(conv_base)
 ```
 
 
@@ -337,6 +340,7 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 
 # Training
 
+## Model epoch 8
 ```{r echo=TRUE}
 model %>% compile(
     optimizer=optimizer_rmsprop(lr=1e-5),
@@ -384,10 +388,119 @@ history <- model %>% fit_generator(
 plot(history)
 ```
 
-### Model from epoch 6, after some fine tuning :
+## Model epoch 8, deeper unfreezing at filter at res4a_branch2a
+
+
+### Creation of the model Impot pre-trained model
+
+```{r}
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+```
+
+
+```{r}
+model <- keras_model_sequential() %>% 
+        conv_base %>% 
+        layer_global_max_pooling_2d() %>% 
+        layer_batch_normalization() %>%
+        layer_dropout(rate=0.5) %>%
+        layer_dense(units=4, activation="sigmoid")
+```
+
+```{r}
+model
+```
+
+### Unfreezing the model 
+
+Following line to got the name of the layer we want to unfreeze (res5a_branch2a)
+
+```{r}
+checkpoint_dir <- "checkpoints"
+
+model %>% load_model_weights_hdf5(
+  file.path(checkpoint_dir,"weights.08.hdf5")
+)
+```
+
+
+[See this link to see](https://keras.rstudio.com/reference/freeze_layers.html) that it works to unfreeze conv_base independently of the sequential model.
+
+```{r}
+unfreeze_weights(conv_base, from="res4a_branch2a")
+```
+
+
 
 ```{r echo=TRUE}
-model<-load_model_hdf5("checkpoints/Resnet50_from_epoch_6_02.hdf5")
+model %>% compile(
+    optimizer=optimizer_rmsprop(lr=1e-5),
+    loss="binary_crossentropy",
+    metrics = "accuracy"
+)
+```
+
+Save all the models :
+
+```{r echo=TRUE}
+checkpoint_dir <- "fine_tuned_models"
+unlink(checkpoint_dir, recursive = TRUE)
+dir.create(checkpoint_dir)
+
+```
+
+```{r echo=TRUE}
+filepath <- file.path(checkpoint_dir, "Fine_tuned_Resnet50_epoch_8_filter_4{epoch:02d}.hdf5")
+
+cp_callback <- callback_model_checkpoint(
+  filepath = filepath,
+  save_weights_only = FALSE,
+  verbose = 1
+)
+```
+
+```{r echo=TRUE}
+callback_list<-list(callback_lr, #callback to update lr
+                      cp_callback)
+```
+
+```{r}
+history <- model %>% fit_generator(
+    train_generator,
+    steps_per_epoch=n,
+    epochs = nb_epochs,
+    callbacks = callback_list, #callback to update cylic lr
+    validation_data = validation_generator,
+    validation_step=50
+)
+```
+
+```{r history_model_epoch_8_filter4}
+plot(history)
+```
+
+
+## Model from epoch 6, after some fine tuning :
+
+```{r echo=TRUE}
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-6, max_lr=1e-4, step_size=floor(n/2),
+                        mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-6, max_lr=1e-4, step_size=floor(n),
+                        mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
+
+l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
+
+l_rate <- rep(c(l_rate_cyclical, l_rate_cosine_annealing), nb_epochs/2)
+```
+
+```{r}
+plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", col="grey50")
+```
+
+```{r echo=TRUE}
+model<-load_model_hdf5("checkpoints/Resnet50_from_epoch_6_01.hdf5")
 ```
 
 ```{r echo=TRUE}
