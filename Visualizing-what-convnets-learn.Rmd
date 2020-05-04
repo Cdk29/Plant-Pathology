@@ -2,7 +2,7 @@
 title: "Visualizing-what-convnets-learn"
 author: "Etienne Rolland"
 date: "04/05/2020"
-output: github
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -59,7 +59,7 @@ model<-load_model_hdf5("fine_tuned_models/Fine_tuned_Resnet50_epoch_6_07.hdf5")
 
 
 ```{r}
-img_path<-"plant-pathology-2020-fgvc7/images/Train_1000.jpg"
+img_path<-"plant-pathology-2020-fgvc7/images/Test_0.jpg"
 
 ```
 

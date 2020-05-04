@@ -2,7 +2,7 @@
 title: "Submit_kaggle"
 author: "Etienne Rolland"
 date: "04/05/2020"
-output: github
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
