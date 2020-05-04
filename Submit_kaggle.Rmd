@@ -1,0 +1,134 @@
+---
+title: "Submit_kaggle"
+author: "Etienne Rolland"
+date: "04/05/2020"
+output: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Submission
+
+Notebook to load a model, made the prediction on the test set and submit to kaggle.
+
+
+## Set up
+
+```{r}
+library(tidyverse)
+library(keras)
+library(tensorflow)
+library(reticulate)
+```
+
+
+```{r}
+use_python("/usr/bin/python3.5", required = TRUE)
+tf <- tensorflow::tf
+sess <- tf$Session()
+```
+
+```{r}
+image_path<-'plant-pathology-2020-fgvc7/images/'
+```
+
+```{r}
+#reticulate::virtualenv_install(packages="pandas") 
+```
+
+```{r}
+keras::use_implementation("keras")
+keras::use_backend("tensorflow")
+
+```
+
+```{r}
+reticulate::py_config()
+```
+
+
+## Loading model
+
+```{r}
+model<-load_model_hdf5("fine_tuned_models/Fine_tuned_Resnet50_epoch_6_07.hdf5")
+```
+
+## Test set
+
+```{r}
+test<-read_csv('plant-pathology-2020-fgvc7//test.csv')
+test$image_id <- paste0(test$image_id, ".jpg")
+head(test)
+```
+
+```{r}
+image_path<-'plant-pathology-2020-fgvc7/images/'
+```
+
+```{r}
+test_generator <- flow_images_from_dataframe(dataframe = test, 
+                                              directory = image_path,
+                                              class_mode = NULL,
+                                              x_col = "image_id",
+                                              y_col = NULL,
+                                              target_size = c(224, 224),
+                                              batch_size=1)
+
+```
+
+```{r}
+num_test_images<-1821
+
+```
+
+
+```{r}
+pred <- model %>% predict_generator(test_generator, steps=num_test_images)
+```
+
+
+```{r}
+head(pred)
+```
+
+```{r}
+sample_submission<-read.csv("plant-pathology-2020-fgvc7/sample_submission.csv")
+```
+
+```{r}
+pred<-as.data.frame(cbind("id", pred))
+colnames(pred)<-colnames(sample_submission)
+head(pred)
+```
+
+```{r}
+pred[,1]<-gsub(".jpg","",test$image_id)
+head(pred)
+```
+
+```{r}
+write.csv(pred, file='submission_Fine_tuned_Resnet50_epoch_6_07.csv', row.names=FALSE, quote=FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
