@@ -1,0 +1,124 @@
+---
+title: "Visualizing-what-convnets-learn"
+author: "Etienne Rolland"
+date: "04/05/2020"
+output: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Visualizing-what-convnets-learn
+
+Most of the code came from this page came from this [chapter of the book Deep learning with R](https://jjallaire.github.io/deep-learning-with-r-notebooks/notebooks/5.4-visualizing-what-convnets-learn.nb.html
+). The goal is to check what the differents conv_nets has learned before submitting. At the moment I can't run it since the resnet has been built using the sequential API.
+
+## Set up
+
+```{r}
+library(tidyverse)
+library(keras)
+library(tensorflow)
+library(reticulate)
+```
+
+
+```{r}
+use_python("/usr/bin/python3.5", required = TRUE)
+tf <- tensorflow::tf
+sess <- tf$Session()
+```
+
+```{r}
+image_path<-'plant-pathology-2020-fgvc7/images/'
+```
+
+```{r}
+#reticulate::virtualenv_install(packages="pandas") 
+```
+
+```{r}
+keras::use_implementation("keras")
+keras::use_backend("tensorflow")
+
+```
+
+```{r}
+reticulate::py_config()
+```
+
+
+## Loading model
+
+```{r}
+model<-load_model_hdf5("fine_tuned_models/Fine_tuned_Resnet50_epoch_6_07.hdf5")
+```
+
+# Visualization
+
+
+```{r}
+img_path<-"plant-pathology-2020-fgvc7/images/Train_1000.jpg"
+
+```
+
+
+NB : it is really important to use imagenet_preprocess_net(), otherwise the predictions does not reflect what the model has learned.
+
+```{r}
+img <- image_load(img_path, target_size = c(224, 224)) %>% 
+  # Array of shape (224, 224, 3)
+  image_to_array() %>% 
+  # Adds a dimension to transform the array into a batch of size (1, 224, 224, 3)
+  array_reshape(dim = c(1, 224, 224, 3)) %>% 
+  # Preprocesses the batch (this does channel-wise color normalization)
+  imagenet_preprocess_input()
+```
+
+
+```{r}
+preds <- model %>% predict(img)
+print(c("healthy", "multiple_diseases", "rust", "scab"))
+print(preds)
+```
+
+```{r}
+summary(model)
+```
+
+
+```{r}
+rust_output <- model$output[, 3]
+```
+
+```{r}
+grads <- k_gradients(rust_output, last_conv_layer$output)[[1]]
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
