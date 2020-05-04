@@ -23,12 +23,10 @@ The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGV
 
 ![Train and Val loss and accuracy fine tuned model](https://github.com/Cdk29/Plant-Pathology/blob/master/resnet50-lr-finder-and-cyclic-lr-with-r_files/figure-gfm/plot_perforance_fine_tuned_from_epoch_6-1.png)
 
-### Fine-tuning of the pre-trained model with custom head generated at epoch 8 after unfreezing of an other layer of filters :
-
-![Train and Val loss fine tuned epoch 8](https://github.com/Cdk29/Plant-Pathology/blob/master/Fine-tuning_files/figure-gfm/history_model_epoch_8_filter4-1.png)
-
-
-
 ### Fine-tuning of the previous model at epoch 1 at a lower learning rate :
 
 ![Train and Val loss final](https://github.com/Cdk29/Plant-Pathology/blob/master/Fine-tuning_files/figure-gfm/history_model_epoch_6-1.png)
+
+### Fine-tuning of the pre-trained model with custom head generated at epoch 8 after unfreezing of an other layer of filters :
+
+![Train and Val loss fine tuned epoch 8](https://github.com/Cdk29/Plant-Pathology/blob/master/Fine-tuning_files/figure-gfm/history_model_epoch_8_filter4-1.png)
