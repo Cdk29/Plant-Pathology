@@ -196,7 +196,7 @@ How to decide to what to add to the conv_base of a Resnet-50 ? Running the follo
 #================================================================================
 ```
 
-But it gave quite poor results. Actually I have tried to look in other kernels, without finding clear consensus. Finally I will add some layer in a similar way on [how it is done in fast_ai](https://docs.fast.ai/vision.learner.html#create_head). Since there is a "funny" pooling operation, The AdaptiveConcatPool2d (adaptive average pooling and adaptive max pooling), I will use a max pooling, because we are most interresting to know if there is a rust or scab, that something on “average”. 
+But it gave quite poor results. Actually I have tried to look in other kernels, without finding clear consensus. Finally I will add some layer in a similar way on [how it is done in fast_ai](https://docs.fast.ai/vision.learner.html#create_head). Since there is a "funny" pooling operation, The AdaptiveConcatPool2d (adaptive average pooling and adaptive max pooling), I will use a max pooling, because we are most interresting to know if there is a rust or scab, that something on “average”. Using layer_global_average_pooling_2d() did not improved the results.
 
 One of the most important aspect of deep learning is to set up a good loss function and last layer activation. Since it is a **multiclass** and **multi-label** classification (plants can have several diseases), I will use a **softmax** activation for the last layer and a **categorical crossentropy** as the loss function. Previous version run on a different and quite nonsense set of loss and architecture, due to a probable typo in the book deep learning with R, page 105.
 
@@ -424,16 +424,16 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 
 ```{r}
 n=50
-nb_epochs=30
+nb_epochs=20
 n_iter<-n*nb_epochs
 ```
 
 ```{r}
-l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-6, max_lr=1e-3, step_size=floor(n/2),
                         mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
 
-l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-6, max_lr=1e-3, step_size=floor(n),
                         mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
 l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])

@@ -286,8 +286,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 237.9 114.9 92.7 186.6 159.9 ...
-    ##  $ : num [1:32, 1:4] 0 0 0 1 1 0 1 0 0 0 ...
+    ##  $ : num [1:32, 1:224, 1:224, 1:3] 98.8 78.9 194.6 101.1 141.3 ...
+    ##  $ : num [1:32, 1:4] 0 0 0 0 0 0 0 1 0 0 ...
 
 # Import pre-trained model
 
@@ -331,7 +331,8 @@ fast\_ai](https://docs.fast.ai/vision.learner.html#create_head). Since
 there is a “funny” pooling operation, The AdaptiveConcatPool2d (adaptive
 average pooling and adaptive max pooling), I will use a max pooling,
 because we are most interresting to know if there is a rust or scab,
-that something on “average”.
+that something on “average”. Using layer\_global\_average\_pooling\_2d()
+did not improved the results.
 
 One of the most important aspect of deep learning is to set up a good
 loss function and last layer activation. Since it is a **multiclass**
@@ -470,12 +471,12 @@ head(data)
 ```
 
     ##   Learning_rate     Loss
-    ## 1  1.145048e-08 2.633336
-    ## 2  1.311134e-08 2.232244
-    ## 3  1.501311e-08 2.445387
-    ## 4  1.719072e-08 2.077112
-    ## 5  1.968419e-08 3.091516
-    ## 6  2.253934e-08 2.076675
+    ## 1  1.145048e-08 2.943327
+    ## 2  1.311134e-08 2.480806
+    ## 3  1.501311e-08 2.603610
+    ## 4  1.719072e-08 2.489615
+    ## 5  1.968419e-08 2.322310
+    ## 6  2.253934e-08 3.216194
 
 Learning rate vs loss
 :
@@ -621,16 +622,16 @@ batch (51 actually).
 
 ``` r
 n=50
-nb_epochs=30
+nb_epochs=20
 n_iter<-n*nb_epochs
 ```
 
 ``` r
-l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-5, max_lr=1e-3, step_size=floor(n/2),
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-6, max_lr=1e-3, step_size=floor(n/2),
                         mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
 
-l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-5, max_lr=1e-3, step_size=floor(n),
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-6, max_lr=1e-3, step_size=floor(n),
                         mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
 l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
@@ -715,4 +716,4 @@ plot(history)
 list.files("checkpoints/")
 ```
 
-    ## [1] "weights.01.hdf5"
+    ## [1] "weights.01.hdf5" "weights.02.hdf5" "weights.08.hdf5"
