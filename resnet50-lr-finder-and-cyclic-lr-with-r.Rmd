@@ -14,7 +14,7 @@ But I am a R practitioner and I want to know a framework that I can use with R. 
 The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGVC7](https://www.kaggle.com/c/plant-pathology-2020-fgvc7). In this notebook I also reimplement a learning rate finder and the one cycle policy.
 
 ## To do list :
-* bigger images 
+* bigger images :heavy_check_mark:
 * load best model after training :heavy_check_mark:
 * lr finder :heavy_check_mark:
 * add data augmentation :heavy_check_mark:
@@ -294,7 +294,7 @@ history <- model %>% fit_generator(
     epochs = 1,
     callbacks = callback_list,
     validation_data = validation_generator,
-    validation_step=30
+    validation_step=1
 )
 ```
 

@@ -21,7 +21,7 @@ policy.
 
 ## To do list :
 
-  - bigger images
+  - bigger images :heavy\_check\_mark:
   - load best model after training :heavy\_check\_mark:
   - lr finder :heavy\_check\_mark:
   - add data augmentation :heavy\_check\_mark:
@@ -286,8 +286,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:16, 1:448, 1:448, 1:3] 123 79 65 53.2 55 ...
-    ##  $ : num [1:16, 1:4] 1 0 1 0 0 1 0 1 0 0 ...
+    ##  $ : num [1:16, 1:448, 1:448, 1:3] 173 51 20.5 144.2 57 ...
+    ##  $ : num [1:16, 1:4] 0 0 0 1 0 0 0 0 0 1 ...
 
 # Import pre-trained model
 
@@ -461,7 +461,7 @@ history <- model %>% fit_generator(
     epochs = 1,
     callbacks = callback_list,
     validation_data = validation_generator,
-    validation_step=30
+    validation_step=1
 )
 ```
 
@@ -471,12 +471,12 @@ head(data)
 ```
 
     ##   Learning_rate     Loss
-    ## 1  1.145048e-08 2.161326
-    ## 2  1.311134e-08 1.388247
-    ## 3  1.501311e-08 2.743364
-    ## 4  1.719072e-08 3.008206
-    ## 5  1.968419e-08 2.398663
-    ## 6  2.253934e-08 2.384671
+    ## 1  1.145048e-08 3.170528
+    ## 2  1.311134e-08 1.753860
+    ## 3  1.501311e-08 3.037656
+    ## 4  1.719072e-08 1.663288
+    ## 5  1.968419e-08 2.589540
+    ## 6  2.253934e-08 1.886588
 
 Learning rate vs loss
 :
@@ -717,4 +717,5 @@ plot(history)
 list.files("checkpoints/")
 ```
 
-    ## [1] "weights.01.hdf5" "weights.02.hdf5" "weights.09.hdf5" "weights.10.hdf5"
+    ## [1] "weights.01.hdf5" "weights.04.hdf5" "weights.11.hdf5" "weights.13.hdf5"
+    ## [5] "weights.14.hdf5" "weights.15.hdf5"
