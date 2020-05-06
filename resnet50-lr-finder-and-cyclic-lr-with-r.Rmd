@@ -141,8 +141,8 @@ train_generator <- flow_images_from_dataframe(dataframe = train_labels,
                                               class_mode = "other",
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-                                              target_size = c(224, 224),
-                                              batch_size=32)
+                                              target_size = c(448, 448),
+                                              batch_size=16)
 ```
 
 ```{r}
@@ -151,8 +151,8 @@ validation_generator <- flow_images_from_dataframe(dataframe = val_labels,
                                               class_mode = "other",
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-                                              target_size = c(224, 224),
-                                              batch_size=32)
+                                              target_size = c(448, 448),
+                                              batch_size=16)
 ```
 
 ```{r}
@@ -169,7 +169,7 @@ str(batch)
 How to choose the parameters ? c(224, 224, 3) is the default of Resnet, came from the default if include_top is set to true. 
 
 ```{r}
-conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(448, 448, 3))
 ```
 
 ```{r}
@@ -420,7 +420,8 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 
 ### Combining the two
 
-50 because it is the size of the training set divided by the size of the batch (51 actually).
+50 because it is the size of the training set divided by the size of the batch (32) (51 actually).
+Update for images of 448 x 448 : the batch size is of 16.
 
 ```{r}
 n=50

@@ -260,8 +260,8 @@ train_generator <- flow_images_from_dataframe(dataframe = train_labels,
                                               class_mode = "other",
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-                                              target_size = c(224, 224),
-                                              batch_size=32)
+                                              target_size = c(448, 448),
+                                              batch_size=16)
 ```
 
 ``` r
@@ -270,8 +270,8 @@ validation_generator <- flow_images_from_dataframe(dataframe = val_labels,
                                               class_mode = "other",
                                               x_col = "image_id",
                                               y_col = c("healthy", "multiple_diseases", "rust", "scab"),
-                                              target_size = c(224, 224),
-                                              batch_size=32)
+                                              target_size = c(448, 448),
+                                              batch_size=16)
 ```
 
 ``` r
@@ -286,8 +286,8 @@ str(batch)
 ```
 
     ## List of 2
-    ##  $ : num [1:32, 1:224, 1:224, 1:3] 98.8 78.9 194.6 101.1 141.3 ...
-    ##  $ : num [1:32, 1:4] 0 0 0 0 0 0 0 1 0 0 ...
+    ##  $ : num [1:16, 1:448, 1:448, 1:3] 123 79 65 53.2 55 ...
+    ##  $ : num [1:16, 1:4] 1 0 1 0 0 1 0 1 0 0 ...
 
 # Import pre-trained model
 
@@ -296,7 +296,7 @@ came from the default if include\_top is set to
 true.
 
 ``` r
-conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(224, 224, 3))
+conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, input_shape = c(448, 448, 3))
 ```
 
 ``` r
@@ -359,7 +359,7 @@ model
     ## ________________________________________________________________________________
     ## Layer (type)                        Output Shape                    Param #     
     ## ================================================================================
-    ## resnet50 (Model)                    (None, 7, 7, 2048)              23587712    
+    ## resnet50 (Model)                    (None, 14, 14, 2048)            23587712    
     ## ________________________________________________________________________________
     ## global_max_pooling2d_1 (GlobalMaxPo (None, 2048)                    0           
     ## ________________________________________________________________________________
@@ -471,12 +471,12 @@ head(data)
 ```
 
     ##   Learning_rate     Loss
-    ## 1  1.145048e-08 2.943327
-    ## 2  1.311134e-08 2.480806
-    ## 3  1.501311e-08 2.603610
-    ## 4  1.719072e-08 2.489615
-    ## 5  1.968419e-08 2.322310
-    ## 6  2.253934e-08 3.216194
+    ## 1  1.145048e-08 2.161326
+    ## 2  1.311134e-08 1.388247
+    ## 3  1.501311e-08 2.743364
+    ## 4  1.719072e-08 3.008206
+    ## 5  1.968419e-08 2.398663
+    ## 6  2.253934e-08 2.384671
 
 Learning rate vs loss
 :
@@ -618,7 +618,8 @@ plot(l_rate, type="b", pch=16, xlab="iteration", cex=0.2, ylab="learning rate", 
 ### Combining the two
 
 50 because it is the size of the training set divided by the size of the
-batch (51 actually).
+batch (32) (51 actually). Update for images of 448 x 448 : the batch
+size is of 16.
 
 ``` r
 n=50
@@ -716,4 +717,4 @@ plot(history)
 list.files("checkpoints/")
 ```
 
-    ## [1] "weights.01.hdf5" "weights.02.hdf5" "weights.08.hdf5"
+    ## [1] "weights.01.hdf5" "weights.02.hdf5" "weights.09.hdf5" "weights.10.hdf5"
