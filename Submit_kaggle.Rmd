@@ -96,6 +96,8 @@ head(test)
 image_path<-'plant-pathology-2020-fgvc7/images/'
 ```
 
+With shuffle = FALSE to not mix images and got the right order in the predictions.
+
 ```{r}
 test_generator <- flow_images_from_dataframe(dataframe = test, 
                                               directory = image_path,
@@ -103,6 +105,7 @@ test_generator <- flow_images_from_dataframe(dataframe = test,
                                               x_col = "image_id",
                                               y_col = NULL,
                                               target_size = c(448, 448),
+                                              shuffle = FALSE,
                                               batch_size=1)
 
 ```
