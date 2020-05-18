@@ -329,7 +329,7 @@ The lr max is set as the one used to train the head of the model, divided by 10.
 
 ```{r echo=TRUE}
 n=100
-nb_epochs=10
+nb_epochs=20
 n_iter<-n*nb_epochs
 ```
 
