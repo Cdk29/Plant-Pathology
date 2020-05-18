@@ -120,8 +120,8 @@ Plotting to see if it works :
     ## <keras_preprocessing.image.dataframe_iterator.DataFrameIterator>
 
     ## List of 2
-    ##  $ : num [1:4, 1:448, 1:448, 1:3] 158 225 202 180 111 ...
-    ##  $ : num [1:4, 1:4] 1 0 0 0 0 0 0 0 0 0 ...
+    ##  $ : num [1:4, 1:448, 1:448, 1:3] 50 45.5 117.6 122.8 49.8 ...
+    ##  $ : num [1:4, 1:4] 0 0 1 0 0 0 0 0 1 1 ...
 
 # Impot pre-trained model
 
@@ -592,11 +592,11 @@ n_iter<-n*nb_epochs
 ```
 
 ``` r
-l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-7, max_lr=(1e-3)/5, step_size=floor(n/2),
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-7, max_lr=(1e-3)/10, step_size=floor(n/2),
                         mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
 
-l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-7, max_lr=(1e-3)/5, step_size=floor(n),
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-7, max_lr=(1e-3)/10, step_size=floor(n),
                         mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
 l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
