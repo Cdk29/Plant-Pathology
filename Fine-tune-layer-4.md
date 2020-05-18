@@ -120,8 +120,8 @@ Plotting to see if it works :
     ## <keras_preprocessing.image.dataframe_iterator.DataFrameIterator>
 
     ## List of 2
-    ##  $ : num [1:4, 1:448, 1:448, 1:3] 161.5 164 50 68.6 161.5 ...
-    ##  $ : num [1:4, 1:4] 1 0 0 0 0 0 1 0 0 0 ...
+    ##  $ : num [1:4, 1:448, 1:448, 1:3] 42.6 35.9 53.1 179 42.7 ...
+    ##  $ : num [1:4, 1:4] 0 1 1 1 0 0 0 0 0 0 ...
 
 # Impot pre-trained model
 
@@ -586,7 +586,7 @@ The lr max is set as the one used to train the head of the model,
 divided by 10. Same for the base\_lr.
 
 ``` r
-n=40
+n=100
 nb_epochs=10
 n_iter<-n*nb_epochs
 ```
