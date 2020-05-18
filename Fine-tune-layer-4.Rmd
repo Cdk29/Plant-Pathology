@@ -328,18 +328,18 @@ Cyclic_LR <- function(iteration=1:32000, base_lr=1e-5, max_lr=1e-3, step_size=20
 The lr max is set as the one used to train the head of the model, divided by 10. Same for the base_lr.
 
 ```{r echo=TRUE}
-n=100
+n=200
 nb_epochs=15
 n_iter<-n*nb_epochs
 ```
 
 
 ```{r echo=TRUE}
-l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-9, max_lr=(1e-3)/10, step_size=floor(n/2),
+l_rate_cyclical <- Cyclic_LR(iteration=1:n, base_lr=1e-8, max_lr=(1e-3)/10, step_size=floor(n/2),
                         mode='triangular', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
 
-l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-9, max_lr=(1e-3)/10, step_size=floor(n),
+l_rate_cosine_annealing <- Cyclic_LR(iteration=1:n_iter, base_lr=1e-8, max_lr=(1e-3)/10, step_size=floor(n),
                         mode='halfcosine', gamma=1, scale_fn=NULL, scale_mode='cycle')
 
 l_rate_cosine_annealing <- rep(l_rate_cosine_annealing[n:(n*2)])
