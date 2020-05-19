@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Submission
 
-Notebook to load a model, made the prediction on the test set and submit to kaggle.
+Notebook to load a model, made the predictions on the test set and create the submissions for kaggle.
 
 
 ## Set up
@@ -58,7 +58,7 @@ conv_base <- application_resnet50(weights = 'imagenet', include_top = FALSE, inp
 ```
 
 ```{r}
-unfreeze_weights(conv_base, from="res5a_branch2a")
+unfreeze_weights(conv_base, from="res4a_branch2a")
 ```
 
 
@@ -76,10 +76,10 @@ model
 ```
 
 ```{r}
-checkpoint_dir <- "fine_tuned_models/"
+checkpoint_dir <- "layer_4_models"
 
 model %>% load_model_weights_hdf5(
-  file.path(checkpoint_dir,"Fine_tuned_Resnet50_res5a_05.hdf5")
+  file.path(checkpoint_dir,"Resnet50_res4a_07.hdf5")
 )
 ```
 
@@ -141,7 +141,7 @@ head(pred)
 ```
 
 ```{r}
-write.csv(pred, file='submission.csv', row.names=FALSE, quote=FALSE)
+write.csv(pred, file='submission_resnet_layer_4.csv', row.names=FALSE, quote=FALSE)
 ```
 
 
