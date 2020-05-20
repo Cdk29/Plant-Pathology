@@ -11,4 +11,4 @@ layer_4_models/*
 Fine-tune-layer-4_files/figure-gfm/history_model_fine_tuned_res2a-1.png
 layer_3_models/Resnet50_res2a_01.hdf5
 layer_3_models/Resnet50_res2a_04.hdf5
-
+layer_3_models/*
