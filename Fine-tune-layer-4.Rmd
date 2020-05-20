@@ -9,7 +9,7 @@ output: github_document
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-# Fine tuning for layer 4
+# Fine tuning for layer 3
 
 In this rmarkdown document I try some additionnal fine tuning of the models produced the fine-tune notebook. Most of the choice of architecture and parameters are wrotte in the other notebook. Most of the code is hidded because of its redundancy.
 
