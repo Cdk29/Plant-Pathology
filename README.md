@@ -28,3 +28,8 @@ The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGV
 
 ![Train and Val loss and accuracy](https://github.com/Cdk29/Plant-Pathology/blob/master/Fine-tune-layer-4_files/figure-gfm/history_model_fine_tuned_res4a-1.png)
 
+### Performance of the model from Epoch 5 after fine tuning of the layer 3 of filters :
+
+![Train and Val loss and accuracy](https://github.com/Cdk29/Plant-Pathology/blob/master/Fine-tune-layer-4_files/figure-gfm/history_model_fine_tuned_res3a-1.png)
+
+
