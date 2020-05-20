@@ -211,8 +211,7 @@ summary(model)
 Here I will try to unfreeze only the layer of interest.
 
 ```{r}
-unfreeze_weights(conv_base, from="res4a_branch2a")
-#freeze_weights(conv_base, from="res5a_branch2a")
+unfreeze_weights(conv_base, from="res3a_branch2a")
 ```
 
 ```{r}
@@ -329,7 +328,7 @@ The lr max is set as the one used to train the head of the model, divided by 10.
 
 ```{r echo=TRUE}
 n=200
-nb_epochs=15
+nb_epochs=10
 n_iter<-n*nb_epochs
 ```
 
@@ -365,14 +364,14 @@ model %>% compile(
 Save all the models :
 
 ```{r echo=TRUE}
-checkpoint_dir <- "layer_4_models"
+checkpoint_dir <- "layer_3_models"
 unlink(checkpoint_dir, recursive = TRUE)
 dir.create(checkpoint_dir)
 
 ```
 
 ```{r echo=TRUE}
-filepath <- file.path(checkpoint_dir, "Resnet50_res4a_{epoch:02d}.hdf5")
+filepath <- file.path(checkpoint_dir, "Resnet50_res3a_{epoch:02d}.hdf5")
 
 cp_callback <- callback_model_checkpoint(
   filepath = filepath,
@@ -397,7 +396,7 @@ history <- model %>% fit_generator(
 )
 ```
 
-```{r history_model_fine_tuned_res4a}
+```{r history_model_fine_tuned_res3a}
 plot(history)
 ```
 

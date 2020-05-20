@@ -120,8 +120,8 @@ Plotting to see if it works :
     ## <keras_preprocessing.image.dataframe_iterator.DataFrameIterator>
 
     ## List of 2
-    ##  $ : num [1:4, 1:448, 1:448, 1:3] 85.2 86.1 120 191.6 57.1 ...
-    ##  $ : num [1:4, 1:4] 0 1 1 1 0 0 0 0 1 0 ...
+    ##  $ : num [1:4, 1:448, 1:448, 1:3] 176 55 124 187 177 ...
+    ##  $ : num [1:4, 1:4] 0 0 0 1 0 0 0 0 1 1 ...
 
 # Impot pre-trained model
 
@@ -574,8 +574,8 @@ I will try to unfreeze only the layer of
     ## dense_1 (Dense)                     (None, 4)                       8196        
     ## ================================================================================
     ## Total params: 23,604,100
-    ## Trainable params: 22,096,900
-    ## Non-trainable params: 1,507,200
+    ## Trainable params: 23,320,068
+    ## Non-trainable params: 284,032
     ## ________________________________________________________________________________
 
 # Creation of the callback for the training :
@@ -619,13 +619,13 @@ model %>% compile(
 Save all the models :
 
 ``` r
-checkpoint_dir <- "layer_4_models"
+checkpoint_dir <- "layer_3_models"
 unlink(checkpoint_dir, recursive = TRUE)
 dir.create(checkpoint_dir)
 ```
 
 ``` r
-filepath <- file.path(checkpoint_dir, "Resnet50_res4a_{epoch:02d}.hdf5")
+filepath <- file.path(checkpoint_dir, "Resnet50_res3a_{epoch:02d}.hdf5")
 
 cp_callback <- callback_model_checkpoint(
   filepath = filepath,
@@ -645,4 +645,4 @@ callback_list<-list(callback_lr, #callback to update lr
 
     ## `geom_smooth()` using formula 'y ~ x'
 
-![](Fine-tune-layer-4_files/figure-gfm/history_model_fine_tuned_res4a-1.png)<!-- -->
+![](Fine-tune-layer-4_files/figure-gfm/history_model_fine_tuned_res3a-1.png)<!-- -->
