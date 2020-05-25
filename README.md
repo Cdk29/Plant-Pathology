@@ -16,6 +16,7 @@ The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGV
 ## Current performance :
 
 Public leaderboard : 0.922
+Public leaderboad of the [kernel on kaggle](https://www.kaggle.com/cdk292/simple-resnet50-lr-finder-and-cyclic-lr-with-r) : 0.944
 
 ### Performance of the pre-trained model with custom head : 
 
