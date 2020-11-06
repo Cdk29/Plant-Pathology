@@ -16,6 +16,8 @@ I also encountered a problem when trying to create an adequate model the first t
 
 ## Material and methods
 
+![Book](https://github.com/Cdk29/Plant-Pathology/blob/master/Deep_learning_R.png)
+![Tarly](https://github.com/Cdk29/Plant-Pathology/blob/master/Tarly.gif)
 
 ## Data
 
@@ -24,8 +26,9 @@ The data of this Rmarkdown came from the competition [Plant Pathology 2020 - FGV
 
 ## Performance :
 
-Public leaderboard : 0.922
-Public leaderboad of the [kernel on kaggle](https://www.kaggle.com/cdk292/simple-resnet50-lr-finder-and-cyclic-lr-with-r) : 0.944
+Public leaderboard : 0.922.
+
+Public leaderboad of the [kernel on kaggle](https://www.kaggle.com/cdk292/simple-resnet50-lr-finder-and-cyclic-lr-with-r) : 0.944.
 
 ### Performance of the pre-trained model with custom head : 
 
